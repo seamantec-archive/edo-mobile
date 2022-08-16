@@ -1,0 +1,28 @@
+<stage>
+    <width>320</width>
+    <height>480</height>
+    <instrument>
+        <uid>stage3_1</uid>
+        <x>0</x>
+        <y>0</y>
+        <w>320</w>
+        <h>160</h>
+        <type>components.instruments.digital.DigitalA</type>
+    </instrument>
+    <instrument>
+        <uid>stage3_2</uid>
+        <x>0</x>
+        <y>160</y>
+        <w>320</w>
+        <h>160</h>
+        <type>components.instruments.digital.DigitalA</type>
+    </instrument>
+    <instrument>
+        <uid>stage3_3</uid>
+        <x>0</x>
+        <y>320</y>
+        <w>320</w>
+        <h>160</h>
+        <type>components.instruments.digital.DigitalA</type>
+    </instrument>
+</stage>

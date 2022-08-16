@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="compass.png">
+   <SubTexture name="analog" x="0" y="0" width="400" height="400"/>
+   <SubTexture name="mutato" x="0" y="400" width="42" height="182"/>
+   <SubTexture name="cogmutato" x="0" y="582" width="11" height="49"/>
+   <SubTexture name="digi" x="0" y="631" width="145" height="57"/>
+   <SubTexture name="digital" x="0" y="688" width="400" height="400"/>
+   <SubTexture name="digimin1" x="42" y="400" width="274" height="126"/>
+   <SubTexture name="digimax1" x="145" y="526" width="274" height="126"/>
+   <SubTexture name="digimin1" x="316" y="400" width="274" height="126"/>
+   <SubTexture name="digimax1" x="400" y="0" width="274" height="126"/>
+   <SubTexture name="digi2" x="400" y="126" width="274" height="126"/>
+   <SubTexture name="digi1" x="400" y="252" width="274" height="126"/>
+</TextureAtlas>

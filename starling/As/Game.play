@@ -1,0 +1,17 @@
+/**
+ * Created by pepusz on 15. 07. 20..
+ */
+package {
+import starling.display.Sprite;
+import starling.text.TextField;
+import starling.core.Starling;
+public class Game extends Sprite {
+    public function Game() {
+    	var currentStarling:Starling = Starling.current;
+    	trace(Main.s);
+    	trace("HELLO game");
+        var textField:TextField = new TextField(200, 300, "Welcome to Starling!", "Verdaba", 24, 0xffffff);
+        addChild(textField);
+    }
+}
+}

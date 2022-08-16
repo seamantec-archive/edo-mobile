@@ -1,0 +1,581 @@
+/**
+ * Created by seamantec on 13/10/14.
+ */
+package components.stages.alarms {
+
+import com.alarm.AisAlarm;
+import com.alarm.Alarm;
+import com.alarm.AlarmHandler;
+import com.alarm.AnchorAlarm;
+import com.alarm.ShiftAlarm;
+import com.alarm.SystemAlarm;
+import com.alarm.Threshold;
+import com.common.AppProperties;
+import com.events.UnitChangedEvent;
+import com.inAppPurchase.CommonStore;
+import com.sailing.units.SmallDistance;
+import com.ui.AlarmSlider;
+import com.ui.AlarmSliderKnob;
+import com.ui.AlertBadge;
+import com.ui.CheckBox;
+import com.ui.InfoBadge;
+import com.ui.LowHighButton;
+import com.ui.ResetBtn;
+import com.utils.Assets;
+import com.utils.FontFactory;
+
+import components.lists.ListItem;
+
+import flash.events.TimerEvent;
+import flash.geom.Point;
+import flash.utils.Timer;
+
+import starling.display.Image;
+import starling.display.Quad;
+import starling.events.Event;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+import starling.text.TextField;
+import starling.textures.TextureSmoothing;
+import starling.utils.VAlign;
+
+public class AlarmsListItem extends ListItem {
+
+    public static const HEIGHT:int = 100;
+
+    private const SLIDER_WIDTH:int = AppProperties.screenWidth * 0.75//* AppProperties.screenScaleRatio;
+
+    private var _UUID:String;
+    private var _alarm:Alarm;
+    private var _enabled:Boolean;
+    private var _enableDisableBox:CheckBox;
+    private var _thresholdLevelButtonBar:LowHighButton;
+    private var _resetBtn:ResetBtn;
+    private var _alarmLabel:TextField;
+    private var _alarmTimer:Timer;
+    private var _slider:AlarmSlider;
+
+    private var _actualAlarmMarker:Image;
+    private static var _markerBlinker:Timer;
+    private static var _markersToBlink:Vector.<Image>;
+    private static var _markerIsInBlink:Boolean;
+
+    private var _infoBadge:InfoBadge;
+    private var _knobInfo:AlarmSliderKnob;
+    private var _alertBadge:AlertBadge;
+    private var _knobAlert:AlarmSliderKnob;
+    private var _knobLimitAreaOffset:Number;
+
+    private var _touchPoint:Point;
+
+    private var _filter:Quad;
+
+    public function AlarmsListItem(UUID:String) {
+        super(AppProperties.screenWidth, HEIGHT, uint.MAX_VALUE,1, false);
+
+        _UUID = UUID;
+        _alarm = AlarmHandler.instance.alarms[_UUID] as Alarm;
+        _enabled = _alarm.enabled;
+
+        _alarmTimer = new Timer(500);
+        _alarmTimer.addEventListener(TimerEvent.TIMER, alarmTimerHandler, false, 0, true);
+
+        if (_markerBlinker == null) {
+            _markerBlinker = new Timer(500);
+            _markersToBlink = new Vector.<Image>();
+            _markerBlinker.addEventListener(TimerEvent.TIMER, markerBlinkerHandler, false, 0, true);
+            _markerIsInBlink = false;
+        }
+
+        var bg:Image = new Image(Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("alarmlist_tegla"));
+        bg.smoothing = TextureSmoothing.NONE;
+        bg.width = AppProperties.screenWidth;
+        bg.height = HEIGHT;
+//        _quadBatcher.addDisplayObject(bg);
+        this.addChild(bg);
+
+        addLabel(_alarm.textLabel, FontFactory.getWhiteLeftFont(bg.width - 90, 20, 16, VAlign.TOP), 5, 3);
+
+        createThresholdLevelButtonnBar();
+        createEnableDisableBox();
+        createAlarmTextAndLabel();
+        createSlider();
+        createActualAlarmMarker();
+        createInfoKnob();
+        createInfoLabelText();
+        createAlertKnob();
+        createAlertLabelText();
+
+        if (!CommonStore.instance.isAlarmEnabled && AlarmHandler.ENABLED_ALARMS.indexOf(_alarm.xmlID) < 0) {
+            _filter = new Quad(bg.width, bg.height, 0x000000);
+            _filter.alpha = 0.4;
+            _filter.addEventListener(TouchEvent.TOUCH, onFilterTouch);
+            this.addChild(_filter);
+        }
+
+        _alarm.addEventListener("actualValueChanged", actualValueChangedHandler);
+        _alarm.addEventListener("infoLimitChangedBySibling", infoLimitChangedBySiblingHandler);
+        _alarm.addEventListener("alertLimitChangedBySibling", alertLimitChangedBySiblingHandler);
+        _alarm.addEventListener("startVisualAlert", startVisualAlertHandler);
+        _alarm.addEventListener("stopVisualAlert", stopVisualAlertHandler);
+//        _alarm.addEventListener("alarmEnableChanged", alarmEnableChangedHandler);
+        _alarm.addEventListener("isValidChanged", isValidChangedHandler);
+        _alarm.addEventListener("labelChanged", labelChangedHandler);
+        _alarm.addEventListener(UnitChangedEvent.CHANGE, unitChangedHandler);
+
+        CommonStore.instance.addEventListener("alarm-enabled", alarmEnabledHandler);
+    }
+
+    private function createEnableDisableBox():void {
+        _enableDisableBox = new CheckBox();
+        _enableDisableBox.x = 5;
+        _enableDisableBox.y = (HEIGHT / 2) - (_enableDisableBox.height / 2);
+        _enableDisableBox.isSelected = AlarmHandler.instance.alarms[_UUID].enabled;
+        _enableDisableBox.addEventListener(Event.CHANGE, enableDisableBoxHandler);
+        this.addChild(_enableDisableBox);
+
+        if (_alarm is AnchorAlarm || _alarm is ShiftAlarm) {
+            _enableDisableBox.y = _thresholdLevelButtonBar.y - _enableDisableBox.height - 4;
+
+            _resetBtn = new ResetBtn();
+            _resetBtn.x = 5;
+            _resetBtn.y = _enableDisableBox.y - _resetBtn.height - 2;
+            _resetBtn.addEventListener(TouchEvent.TOUCH, resetBtnHandler);
+            this.addChild(_resetBtn);
+
+            this.getLabelByText(_alarm.textLabel).x += _resetBtn.width;
+        }
+    }
+
+    private function createThresholdLevelButtonnBar():void {
+        if (!(_alarm is SystemAlarm)) {
+            _thresholdLevelButtonBar = new LowHighButton(5, HEIGHT - 25);
+            _thresholdLevelButtonBar.addEventListener(TouchEvent.TOUCH, thresholdLevelButtonBarHandler);
+            switch (_alarm.actualThresholdLevel) {
+                case Threshold.LOW:
+                    _thresholdLevelButtonBar.selectedIndex = 1;
+                    break;
+                case Threshold.HIGH:
+                    _thresholdLevelButtonBar.selectedIndex = 0;
+                    break;
+            }
+            this.addChild(_thresholdLevelButtonBar);
+        }
+    }
+
+    private function createAlarmTextAndLabel():void {
+        _alarmLabel = FontFactory.getWhiteRightFont(100, 20, 16);
+        _alarmLabel.vAlign = VAlign.TOP;
+        _alarmLabel.x = this.width - 100;
+        _alarmLabel.y = 3;
+        setActualValueText();
+//        _quadBatcher.addDisplayObject(_alarmLabel);
+        this.addChild(_alarmLabel);
+    }
+
+    private function createInfoLabelText():void {
+        if (_infoBadge == null) {
+            _infoBadge = new InfoBadge(0, 0);//24*AppProperties.screenScaleRatio);
+            _infoBadge.y = _knobInfo.y - _infoBadge.height - 2;
+            _infoBadge.textColor = 0x000000;
+//            _quadBatcher.addDisplayObject(_infoBadge);
+            this.addChild(_infoBadge);
+        }
+        _infoBadge.text = _alarm.actualInfoLimit.toString();
+        setInfoLabelPos();
+
+        if (_alarm is AisAlarm) {
+            _infoBadge.visible = false;
+        }
+
+//        _quadBatcher.render();
+    }
+
+    private function createAlertLabelText():void {
+        if (_alertBadge == null) {
+            _alertBadge = new AlertBadge(0, 0);//24*AppProperties.screenScaleRatio);
+            _alertBadge.y = _knobAlert.y - _alertBadge.height - 2;
+//            _quadBatcher.addDisplayObject(_alertBadge);
+            this.addChild(_alertBadge);
+        }
+        _alertBadge.text = _alarm.actualAlertLimit.toString();
+        setAlertLabelPos();
+
+//        _quadBatcher.render();
+    }
+
+    private function createSlider():void {
+        if ((AlarmHandler.instance.alarms[_UUID] is SystemAlarm)) {
+            return;
+        }
+        _slider = new AlarmSlider(_alarm.min, _alarm.max, _alarm.steps, SLIDER_WIDTH, _alarm.alarmType, _alarm);
+        _slider.x = (AppProperties.screenWidth / 320) * 60;
+        _slider.y = 44;
+        _slider.actualAlarmValue = _alarm.actualValue;
+        _slider.actualAlertLimit = _alarm.actualAlertLimit;
+        _slider.actualInfoLimit = _alarm.actualInfoLimit;
+        _slider.addEventListener("actualAlarmValueChanged", sliderAlertValueChangedHandler);
+        _slider.addEventListener("actualInfoValueChanged", sliderInfoValueChangedHandler);
+
+        _knobLimitAreaOffset = _slider.limitAreaOffset * AppProperties.screenScaleRatio;
+
+//        _quadBatcher.addDisplayObject(_slider);
+        this.addChild(_slider);
+    }
+
+    private function createActualAlarmMarker():void {
+        if (_actualAlarmMarker == null) {
+            _actualAlarmMarker = new Image(Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("marker_actual"));
+//            _actualAlarmMarker.scaleX = SLIDER_WIDTH/240;
+//            _actualAlarmMarker.scaleY = _actualAlarmMarker.scaleX;
+            setActualValuePositionX();
+//            _actualAlarmMarker.y = _slider.y + 1;
+            _actualAlarmMarker.y = _slider.y + _slider.getSliderY() - (_actualAlarmMarker.height / 2) + 15;
+            this.addChild(_actualAlarmMarker);
+        }
+    }
+
+    private function setActualValuePositionX():void {
+        if (_slider.actualAlarmValue > _slider.maxValue) {
+            _actualAlarmMarker.x = _slider.x + ((_slider.maxValue - _slider.minValue) / _slider.pixelResolution) - (_actualAlarmMarker.width / 2);
+            startMarkerBlinking();
+            return;
+        }
+
+        if (_slider.actualAlarmValue < _slider.minValue) {
+            _actualAlarmMarker.x = _slider.x - (_actualAlarmMarker.width / 2);
+            startMarkerBlinking();
+            return;
+        }
+        stopMarkerBlinking();
+        _actualAlarmMarker.x = _slider.x + ((_slider.actualAlarmValue - _slider.minValue) / _slider.pixelResolution) - (_actualAlarmMarker.width / 2);
+    }
+
+    private function startMarkerBlinking():void {
+        var needToPush:Boolean = true;
+        var length:int = _markersToBlink.length;
+        for (var i:int = 0; i < length; i++) {
+            if (_markersToBlink[i] == _actualAlarmMarker) {
+                needToPush = false;
+                break;
+            }
+        }
+        if (needToPush) {
+            _markersToBlink.push(_actualAlarmMarker);
+        }
+        if (!_markerBlinker.running) {
+            _markerBlinker.start();
+        }
+    }
+
+    private function stopMarkerBlinking():void {
+        var length:int = _markersToBlink.length;
+        for (var i:int = 0; i < length; i++) {
+            if (_markersToBlink[i] == _actualAlarmMarker) {
+                _actualAlarmMarker.visible = true;
+                _markersToBlink.splice(i, 1);
+                break;
+            }
+        }
+        if (_markersToBlink.length === 0) {
+            _markerBlinker.stop();
+            _markerIsInBlink = false;
+        }
+    }
+
+    private function createInfoKnob():void {
+        if (_knobInfo == null) {
+            if (_alarm.alarmType == AlarmSlider.HIGH_LIMIT) {
+                _knobInfo = new AlarmSliderKnob("csusz_bal");
+                _knobInfo.offset = -_knobInfo.width + 3;
+            } else {
+                _knobInfo = new AlarmSliderKnob("csusz_jobb");
+                _knobInfo.offset = -2;
+
+            }
+
+            setKnobInfoX();
+//            _knobInfo.y = _slider.y - 1;
+            _knobInfo.y = _slider.y + _slider.getSliderY() - (_knobInfo.height / 2) + 1;
+            _knobInfo.addEventListener(TouchEvent.TOUCH, onKnobInfoHandler);
+            if (!(_alarm is AisAlarm)) {
+                this.addChild(_knobInfo);
+            }
+        }
+    }
+
+    private function onKnobInfoHandler(e:TouchEvent):void {
+        var moved:Touch = e.getTouch(this, TouchPhase.MOVED);
+        if (moved) {
+            _slider.moveKnobInfoTo(moved.globalX - _slider.x);
+            setKnobInfoX();
+//            _quadBatcher.render();
+        }
+    }
+
+    private function setKnobInfoX():void {
+        _knobInfo.x = _slider.x + _slider.calculateActualInfoX() + _knobInfo.offset;
+    }
+
+    private function createAlertKnob():void {
+        if (_knobAlert == null) {
+            if (_alarm.alarmType == AlarmSlider.LOW_LIMIT) {
+                _knobAlert = new AlarmSliderKnob("csusz_bal");
+                _knobAlert.offset = -_knobAlert.width + 3;
+            } else {
+                _knobAlert = new AlarmSliderKnob("csusz_jobb");
+                _knobAlert.offset = -2;
+            }
+
+            setKnobAlertX();
+//            _knobAlert.y = _slider.y - 1;
+            _knobAlert.y = _slider.y + _slider.getSliderY() - (_knobAlert.height / 2) + 1;
+            _knobAlert.addEventListener(TouchEvent.TOUCH, onKnobAlertHandler);
+            this.addChild(_knobAlert);
+        }
+    }
+
+    private function onKnobAlertHandler(e:TouchEvent):void {
+        var moved:Touch = e.getTouch(this, TouchPhase.MOVED);
+        if (moved) {
+            _slider.moveKnobAlertTo(moved.globalX - _slider.x);
+            setKnobAlertX();
+//            _quadBatcher.render();
+        }
+    }
+
+    private function setKnobAlertX():void {
+        _knobAlert.x = _slider.x + _slider.calculateActualAlertX() + _knobAlert.offset;
+        if (_alarm is AisAlarm) {
+            _knobAlert.x += 1;
+        }
+    }
+
+    private function enableDisableBoxHandler(event:Event):void {
+        _enabled = !_alarm.enabled;
+        _enableDisableBox.isSelected = _enabled;
+        _alarm.enabled = _enabled;
+    }
+
+    private function resetBtnHandler(event:Event):void {
+        _alarm.resetLockedValue();
+    }
+
+    public function enabled():Boolean {
+        return _enabled;
+    }
+
+    private function actualValueChangedHandler(event:Event):void {
+        setActualValueText();
+        _slider.actualAlarmValue = _alarm.actualValue;
+        setActualValuePositionX();
+//        _quadBatcher.render();
+    }
+
+    private function setActualValueText():void {
+        if (_alarmLabel != null) {
+            var text:String = (Math.round(_alarm.actualValue * 10) / 10) + " ";
+
+            //TODO dinamikus mertekegyseg valtasnal ez nem lesz jo
+            if (_alarm is AisAlarm && _alarm.actualValue > 300) {
+                text = "300+ "
+            }
+            if (_alarm.alarmUnitValue is SmallDistance) {
+                text = (Math.round((_alarm.alarmUnitValue as SmallDistance).getDynamicValue() * 10) / 10) + " ";
+            }
+            _alarmLabel.text = ((_alarm is ShiftAlarm) ? "+" : "") + text + getAlarmShortUnitString();
+        }
+    }
+
+    private function getAlarmShortUnitString():String {
+        var alarmShortUnit:String = "";
+        if (_alarm.alarmUnitValue is SmallDistance) {
+            alarmShortUnit = (_alarm.alarmUnitValue as SmallDistance).getDynamicShortString();
+        } else {
+            alarmShortUnit = _alarm.alarmUnitValue.getUnitShortString();
+            if (alarmShortUnit === "") {
+                alarmShortUnit = _alarm.listenerKey.listenerParameter.getUnitShortString()
+            }
+        }
+        return alarmShortUnit;
+    }
+
+    private function infoLimitChangedBySiblingHandler(event:Event):void {
+        _slider.setActualInfoLimitWithoutChange(_alarm.actualInfoLimit);
+        setKnobInfoX();
+        _infoBadge.text = _slider.actualInfoLimit.toString();
+        setInfoLabelPos();
+//        _quadBatcher.render();
+    }
+
+    private function alertLimitChangedBySiblingHandler(event:Event):void {
+        _slider.setActualAlertLimitWithoutChange(_alarm.actualAlertLimit);
+        setKnobAlertX();
+        _alertBadge.text = _slider.actualAlertLimit.toString();
+        setAlertLabelPos();
+//        _quadBatcher.render();
+    }
+
+    private function setAlertLabelPos():void {
+        if (_alertBadge != null) {
+            if (_alarm.alarmType == AlarmSlider.LOW_LIMIT) {
+                _alertBadge.x = _knobAlert.x - (_alertBadge.width / 2) + 1;
+                if(_infoBadge!=null && (_alertBadge.x+_alertBadge.width)>=(_infoBadge.x-2)) {
+                    _alertBadge.x = _infoBadge.x - _alertBadge.width - 2;
+                }
+            } else if (_alarm.alarmType == AlarmSlider.HIGH_LIMIT) {
+                _alertBadge.x = _knobAlert.x + 4;
+                if((_alertBadge.x+_alertBadge.width)>=AppProperties.screenWidth) {
+                    _alertBadge.x = AppProperties.screenWidth - _alertBadge.width;
+                }
+            }
+        }
+    }
+
+    private function setInfoLabelPos():void {
+        if (_infoBadge != null && !(_alarm is AisAlarm)) {
+            if (_alarm.alarmType == AlarmSlider.LOW_LIMIT) {
+                _infoBadge.x = _knobInfo.x + 4;
+                if((_infoBadge.x+_infoBadge.width)>=AppProperties.screenWidth) {
+                    _infoBadge.x = AppProperties.screenWidth - _infoBadge.width;
+                }
+            } else if (_alarm.alarmType == AlarmSlider.HIGH_LIMIT) {
+                _infoBadge.x = _knobInfo.x - (_infoBadge.width / 2) + 1;
+                if(_alertBadge!=null && (_infoBadge.x+_infoBadge.width)>=(_alertBadge.x-2)) {
+                    _infoBadge.x = _alertBadge.x - _infoBadge.width - 2;
+                }
+            }
+        }
+    }
+
+    private function sliderAlertValueChangedHandler(event:Event):void {
+        _alarm.actualAlertLimit = _slider.actualAlertLimit;
+        setKnobAlertX();
+        setAlertTextValueAndX();
+//        _quadBatcher.render();
+    }
+
+    private function setAlertTextValueAndX():void {
+        _alertBadge.text = _alarm.actualAlertLimit.toString();
+        setAlertLabelPos();
+    }
+
+    private function sliderInfoValueChangedHandler(event:Event):void {
+        _alarm.actualInfoLimit = _slider.actualInfoLimit;
+        setKnobInfoX();
+        setInfoTextValueAndX();
+//        _quadBatcher.render();
+    }
+
+    private function setInfoTextValueAndX():void {
+        _infoBadge.text = _alarm.actualInfoLimit.toString();
+        setInfoLabelPos()
+    }
+
+    private function startTimer():void {
+        _alarmTimer.start();
+    }
+
+    private function stopTimer():void {
+        _alarmTimer.stop();
+        _alarmLabel.color = 0xffffff;
+    }
+
+    private function alarmTimerHandler(event:TimerEvent):void {
+        if (_alarmLabel.color == 0) {
+            _alarmLabel.color = 0xff0000;
+        } else {
+            _alarmLabel.color = 0xffffff;
+        }
+
+//        _quadBatcher.render();
+    }
+
+    private function startVisualAlertHandler(event:Event):void {
+        startTimer();
+    }
+
+    private function stopVisualAlertHandler(event:Event):void {
+        stopTimer();
+    }
+
+    private function isValidChangedHandler(event:Event):void {
+        if (_alarm.isValid) {
+            _actualAlarmMarker.visible = true;
+        } else {
+            _actualAlarmMarker.visible = false;
+            _alarmLabel.text = "---" + getAlarmShortUnitString();
+            stopTimer();
+        }
+
+//        _quadBatcher.render();
+    }
+
+    private function labelChangedHandler(event:Event):void {
+        _labels[0].text = _alarm.tempTextLabel;
+//        _quadBatcher.render();
+    }
+
+    private function unitChangedHandler(event:UnitChangedEvent):void {
+        setActualValueText();
+        if (_slider != null) {
+            _slider.setMinMax(_alarm.min, _alarm.max);
+            _slider.unitChanged();
+            _slider.actualAlarmValue = _alarm.actualValue;
+            setAlertTextValueAndX();
+            setInfoTextValueAndX();
+        }
+
+//        _quadBatcher.render();
+    }
+
+    private function thresholdLevelButtonBarHandler(event:TouchEvent):void {
+
+        var began:Touch = event.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = event.getTouch(this, TouchPhase.ENDED);
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+        } else if (ended && Math.abs(_touchPoint.x - ended.globalX) < EdoMobile.FINGER_SIZE && Math.abs(_touchPoint.y - ended.globalY) < EdoMobile.FINGER_SIZE) {
+            var index:int = _thresholdLevelButtonBar.selectedIndex;
+            if (index == 0) {
+                _alarm.setActualThresholdLevelByIndex(Threshold.LOW);
+                _thresholdLevelButtonBar.selectedIndex = 1;
+            } else if (index == 1) {
+                _alarm.setActualThresholdLevelByIndex(Threshold.HIGH);
+                _thresholdLevelButtonBar.selectedIndex = 0;
+            }
+        }
+    }
+
+    private function onFilterTouch(event:TouchEvent):void {
+        var began:Touch = event.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = event.getTouch(this, TouchPhase.ENDED);
+        if(event.touches.length > 1){
+            return;
+        }
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+        } else if (ended) {
+            if (_touchPoint != null && Math.abs(_touchPoint.x - ended.globalX) <= (EdoMobile.FINGER_SIZE / 2) && Math.abs(_touchPoint.y - ended.globalY) <= (EdoMobile.FINGER_SIZE / 2) && !EdoMobile.onMove) {
+                EdoMobile.menu.toStore();
+            }
+        }
+    }
+
+    private function alarmEnabledHandler(event:Event):void {
+        if (_filter != null) {
+            _filter.removeEventListener(TouchEvent.TOUCH, onFilterTouch);
+            this.removeChild(_filter, true);
+        }
+    }
+
+    private static function markerBlinkerHandler(event:TimerEvent):void {
+        var length:int = _markersToBlink.length;
+        for (var i:int = 0; i < length; i++) {
+            _markersToBlink[i].visible = _markerIsInBlink;
+        }
+        _markerIsInBlink = !_markerIsInBlink;
+    }
+}
+}

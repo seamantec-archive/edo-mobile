@@ -1,0 +1,23 @@
+/**
+ * Created by pepusz on 2014.09.03..
+ */
+package components.stages.instruments {
+//import com.inAppPurchase.CommonStore;
+
+import components.*;
+
+public class Stage1 extends EdoStage {
+
+    public static const ID:String = "stage1";
+
+    public function Stage1() {
+        super(ID, "Page 1");
+
+        buildFromFile();
+
+       // if(!CommonStore.instance.isInstrumentsEnabled) {
+       //     addPurchaseButton(EdoStage.PURCHASE_TYPE_INSTRUMENTS);
+       // }
+    }
+}
+}

@@ -1,0 +1,304 @@
+/**
+ * Created by seamantec on 08/12/14.
+ */
+package components {
+import com.common.AppProperties;
+import com.inAppPurchase.AndroidStore;
+import com.inAppPurchase.CommonStore;
+import com.inAppPurchase.IOSStore;
+import com.inAppPurchase.ProductInfo;
+import com.ui.BuyBtn;
+import com.ui.RestoreBtn;
+import com.ui.StageBtn;
+import com.utils.Assets;
+import com.utils.FontFactory;
+
+import starling.display.Image;
+
+import starling.display.Sprite;
+import starling.events.Event;
+import starling.events.TouchEvent;
+import starling.text.TextField;
+import starling.textures.Texture;
+import starling.utils.VAlign;
+
+public class StoreSettings extends Sprite {
+
+    public static var WIDTH:Number = Menu.WIDTH * 0.9;
+    public static var PADDING:Number = Menu.WIDTH * 0.05;
+
+    private static var _storeLabel:TextField;
+    private static var _content:Sprite;
+    private static var _loading:TextField;
+
+    private static var _instrumentsBtn:BuyBtn;
+    private static var _instrumentsPriceLabel:TextField;
+    private static var _alarmBtn:BuyBtn;
+    private static var _alarmPriceLabel:TextField;
+    private static var _polarBtn:BuyBtn;
+    private static var _polarPriceLabel:TextField;
+    private static var _restoreBtn:RestoreBtn;
+    private static var _resetBtn:StageBtn;
+
+    public function StoreSettings() {
+        CommonStore.instance.addEventListener("alarm-enabled", enabledHandler);
+        CommonStore.instance.addEventListener("instruments-enabled", enabledHandler);
+        CommonStore.instance.addEventListener("polar-enabled", enabledHandler);
+        if (AppProperties.isIOS) {
+            IOSStore.instance.addEventListener("product-infos-ready", iosStoreProductInfosReadyHandler);
+            IOSStore.instance.addEventListener("product-infos-failed", storeProductInfosFailedHandler);
+        } else {
+            AndroidStore.instance.addEventListener("product-infos-ready", androidStoreProductInfosReadyHandler);
+            AndroidStore.instance.addEventListener("product-infos-failed", product_infos_failedHandler);
+        }
+
+        if (_storeLabel == null) {
+            _storeLabel = FontFactory.getWhiteLeftFont(WIDTH, 24, 16);
+            _storeLabel.x = PADDING;
+            _storeLabel.y = 0;
+            _storeLabel.text = "In app purchases";
+        }
+        this.addChild(_storeLabel);
+
+        if (_loading == null) {
+            _loading = FontFactory.getWhiteCenterFont(WIDTH, 20, 14);
+            _loading.x = PADDING;
+            _loading.y = 25;
+            _loading.text = "Loading products...";
+        }
+        this.addChild(_loading);
+
+        createButtons();
+    }
+
+    public function setLoadingError(message:String):void {
+        _loading.text = message;
+
+    }
+
+    public function loadProducts():void {
+        DS::device{
+            if (AppProperties.isIOS) {
+                if (!IOSStore.instance.productsReady) {
+                    IOSStore.instance.loadProducts();
+                } else {
+                    loadPricesForButtonsFromIOSStore();
+                }
+            } else {
+                if (!AndroidStore.instance.productsReady) {
+                    AndroidStore.instance.loadProducts();
+                } else {
+                    loadPricesForButtonsFromAndroidStore();
+                }
+            }
+        }
+    }
+
+    private function createButtons():void {
+        if (_content == null) {
+            _content = new Sprite();
+            _content.x = PADDING;
+            _content.y = 30;
+            _content.visible = false;
+
+            addSeparator(0);
+
+            _instrumentsBtn = new BuyBtn();
+            _instrumentsBtn.x = WIDTH - _instrumentsBtn.width;
+            _instrumentsBtn.y = 6;
+            _instrumentsBtn.addEventListener(TouchEvent.TOUCH, onInstrumentsBtn);
+            _content.addChild(_instrumentsBtn);
+            var instrumentsLabel:TextField = FontFactory.getWhiteLeftFont(WIDTH - _instrumentsBtn.width, 20, 13, VAlign.TOP);
+            instrumentsLabel.text = "Instruments";
+            instrumentsLabel.y = _instrumentsBtn.y;
+            _content.addChild(instrumentsLabel);
+            _instrumentsPriceLabel = FontFactory.getWhiteLeftFont(WIDTH - _instrumentsBtn.width, 20, 14, VAlign.TOP);
+            _instrumentsPriceLabel.y = instrumentsLabel.y + instrumentsLabel.height;
+            _content.addChild(_instrumentsPriceLabel);
+
+            addSeparator(_instrumentsBtn.y + _instrumentsBtn.height + 5);
+
+            _alarmBtn = new BuyBtn();
+            _alarmBtn.x = WIDTH - _alarmBtn.width;
+            _alarmBtn.y = _instrumentsBtn.y + _instrumentsBtn.height + 11;
+            _alarmBtn.addEventListener(TouchEvent.TOUCH, onAlarmBtn);
+            _content.addChild(_alarmBtn);
+            var alarmLabel:TextField = FontFactory.getWhiteLeftFont(WIDTH - _alarmBtn.width, 20, 13, VAlign.TOP);
+            alarmLabel.text = "Alarm system";
+            alarmLabel.y = _alarmBtn.y;
+            _content.addChild(alarmLabel);
+            _alarmPriceLabel = FontFactory.getWhiteLeftFont(WIDTH - _alarmBtn.width, 20, 14, VAlign.TOP);
+            _alarmPriceLabel.y = alarmLabel.y + alarmLabel.height;
+            _content.addChild(_alarmPriceLabel);
+
+            addSeparator(_alarmBtn.y + _alarmBtn.height + 5);
+
+            _polarBtn = new BuyBtn();
+            _polarBtn.x = WIDTH - _polarBtn.width;
+            _polarBtn.y = _alarmBtn.y + _alarmBtn.height + 11;
+            _polarBtn.addEventListener(TouchEvent.TOUCH, onPolarBtn);
+            _content.addChild(_polarBtn);
+            var polarLabel:TextField = FontFactory.getWhiteLeftFont(WIDTH - _polarBtn.width, 20, 13, VAlign.TOP);
+            polarLabel.text = "Performance pack";
+            polarLabel.y = _polarBtn.y;
+            _content.addChild(polarLabel);
+            _polarPriceLabel = FontFactory.getWhiteLeftFont(WIDTH - _polarBtn.width, 20, 14, VAlign.TOP);
+            _polarPriceLabel.y = polarLabel.y + polarLabel.height;
+            _content.addChild(_polarPriceLabel);
+
+            addSeparator(_polarBtn.y + _polarBtn.height + 5);
+
+            _restoreBtn = new RestoreBtn();
+            _restoreBtn.y = _polarBtn.y + _polarBtn.height + 11;
+            _restoreBtn.addEventListener(TouchEvent.TOUCH, onRestoreBtn);
+            _content.addChild(_restoreBtn);
+
+//            _resetBtn = new StageBtn("Reset App");
+//            _resetBtn.x = WIDTH - _restoreBtn.width - 10;
+//            _resetBtn.y = _restoreBtn.y + _restoreBtn.height + 10;
+//            _resetBtn.addEventListener(TouchEvent.TOUCH, resetBtn_touchHandler);
+//            _content.addChild(_resetBtn);
+        }
+
+        this.addChild(_content);
+    }
+
+    public static function get instrumentsY():Number {
+        return EdoMobile.menu.storeY + _instrumentsBtn.y;
+    }
+
+    public static function get alarmY():Number {
+        return EdoMobile.menu.storeY + _alarmBtn.y;
+    }
+
+    public static function get polarY():Number {
+        return EdoMobile.menu.storeY + _polarBtn.y;
+    }
+
+    private function onAlarmBtn(e:TouchEvent):void {
+        if (_alarmBtn.touchIsEnd(e)) {
+            if (AppProperties.isIOS) {
+                IOSStore.instance.buyAlarms();
+            } else {
+                AndroidStore.instance.buyAlarms();
+            }
+        }
+    }
+
+    private function onInstrumentsBtn(e:TouchEvent):void {
+        if (_instrumentsBtn.touchIsEnd(e)) {
+            if (AppProperties.isIOS) {
+                IOSStore.instance.buyInstruments();
+            } else {
+                AndroidStore.instance.buyInstruments();
+            }
+        }
+    }
+
+    private function onPolarBtn(e:TouchEvent):void {
+        if (_polarBtn.touchIsEnd(e)) {
+            if (AppProperties.isIOS) {
+                IOSStore.instance.buyPolar();
+            } else {
+                AndroidStore.instance.buyPolar();
+            }
+        }
+    }
+
+    private function onRestoreBtn(e:TouchEvent):void {
+        if (_restoreBtn.touchIsEnd(e)) {
+            if (AppProperties.isIOS) {
+                IOSStore.instance.restore();
+            } else {
+                AndroidStore.instance.restore();
+            }
+        }
+    }
+
+    private function enabledHandler(e:Event):void {
+        setButtonPurchaseState();
+    }
+
+    private function iosStoreProductInfosReadyHandler(e:Event):void {
+        loadPricesForButtonsFromIOSStore();
+    }
+
+    private function loadPricesForButtonsFromIOSStore():void {
+        _loading.visible = false;
+        for (var i:int = 0; i < IOSStore.instance.products.length; i++) {
+            var info:ProductInfo = IOSStore.instance.products[i];
+            if (info.identifier === CommonStore.alarmProductId) {
+                _alarmPriceLabel.text = info.fullPriceTag;
+            } else if (info.identifier === CommonStore.instrumentsProductId) {
+                _instrumentsPriceLabel.text = info.fullPriceTag;
+            } else if ( info.identifier === CommonStore.polarProductId) {
+                _polarPriceLabel.text = "only " + info.fullPriceTag;
+            }
+        }
+        _content.visible = true;
+        setButtonPurchaseState();
+    }
+
+    private function androidStoreProductInfosReadyHandler(e:Event):void {
+        loadPricesForButtonsFromAndroidStore();
+    }
+
+    private function loadPricesForButtonsFromAndroidStore():void {
+        _loading.visible = false;
+        for (var i:int = 0; i < AndroidStore.instance.products.length; i++) {
+            var info:ProductInfo = AndroidStore.instance.products[i];
+            if (info.identifier === CommonStore.alarmProductId) {
+                _alarmPriceLabel.text = info.price;
+            } else if (info.identifier === CommonStore.instrumentsProductId) {
+                _instrumentsPriceLabel.text = info.price;
+            } else if (info.identifier === CommonStore.polarProductId) {
+                _polarPriceLabel.text = "only " + info.price;
+            }
+        }
+        _content.visible = true;
+        setButtonPurchaseState();
+    }
+
+    private function storeProductInfosFailedHandler(e:Event):void {
+        //throw new Error("PRODUCT INFO FAILED");
+        setLoadingError("Initialization error.");
+
+    }
+
+    private function setButtonPurchaseState():void {
+        if (CommonStore.instance.isAlarmEnabled) {
+            _alarmBtn.enabled = false;
+            _alarmBtn.removeEventListener(TouchEvent.TOUCH, onAlarmBtn);
+            EdoMobile.stageContainer.removePurchaseButtons(EdoStage.PURCHASE_TYPE_ALARMS);
+        }
+        if (CommonStore.instance.isInstrumentsEnabled) {
+            _instrumentsBtn.enabled = false;
+            _instrumentsBtn.removeEventListener(TouchEvent.TOUCH, onInstrumentsBtn);
+            EdoMobile.stageContainer.removePurchaseButtons(EdoStage.PURCHASE_TYPE_INSTRUMENTS);
+        }
+        if (CommonStore.instance.isPolarEnabled) {
+            _polarBtn.enabled = false;
+            _polarBtn.removeEventListener(TouchEvent.TOUCH, onPolarBtn);
+            EdoMobile.stageContainer.removePurchaseButtons(EdoStage.PURCHASE_TYPE_POLAR);
+        }
+    }
+
+    private function resetBtn_touchHandler(e:TouchEvent):void {
+        if (_resetBtn.touchIsEnd(e)) {
+            EdoMobile.reset();
+        }
+    }
+
+    private function product_infos_failedHandler(e:Event):void {
+        setLoadingError("Initialization error. Please sign in to Play Store!");
+
+    }
+
+    private function addSeparator(y:Number):void {
+        var separator:Image = new Image(Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("slider_bg"));
+        separator.y = y;
+        separator.width = WIDTH;
+        _content.addChild(separator);
+    }
+}
+}

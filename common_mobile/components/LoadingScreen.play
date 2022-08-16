@@ -1,0 +1,121 @@
+/**
+ * Created by pepusz on 14. 12. 05..
+ */
+package components {
+import com.common.AppProperties;
+import com.utils.Assets;
+import com.utils.FontFactory;
+
+import starling.display.Image;
+import starling.display.Sprite;
+import starling.events.EnterFrameEvent;
+import starling.events.Event;
+import starling.text.TextField;
+import starling.textures.Texture;
+
+public class LoadingScreen extends Sprite {
+
+    public static const STATUS_READY:int = -1;
+    public static const STATUS_BEGIN_POLAR:int = 0;
+    public static const STATUS_LOAD_POLAR:int = 1;
+    public static const STATUS_BEGIN_INSTRUMENTS:int = 2;
+    public static const STATUS_LOAD_INSTRUMENTS:int = 3;
+
+    [Embed(source="../assets/ios/Launch file_640x1136.png")]
+    private var splashBgClass:Class;
+
+    [Embed(source="../assets/ios/spinner.png")]
+    private var spinner:Class;
+
+    var bgImg:Image;
+    var bgTexture:Texture;
+    var spinnerImg:Image;
+    var spinnerTexture:Texture;
+    var infoField:TextField;
+
+    private var _status:int = STATUS_READY;
+
+    function LoadingScreen() {
+        super();
+        bgTexture = Texture.fromBitmap(new splashBgClass());
+        bgImg = new Image(bgTexture);
+        bgImg.width = AppProperties.screenWidth;
+        bgImg.height = AppProperties.screenHeight;
+        spinnerTexture = Texture.fromBitmap(new spinner());
+        spinnerImg = new Image(spinnerTexture);
+
+        spinnerImg.pivotX = spinnerImg.width / 2;
+        spinnerImg.pivotY = spinnerImg.height / 2;
+        spinnerImg.x = AppProperties.screenWidth / 2;
+        spinnerImg.y = AppProperties.screenHeight / 2;
+        spinnerImg.scaleX /= AppProperties.screenScaleRatio;
+        spinnerImg.scaleY /= AppProperties.screenScaleRatio;
+
+        infoField = FontFactory.getWhiteCenterFont(AppProperties.screenWidth,30);
+        infoField.y = (AppProperties.screenHeight*2)/3;
+
+        this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
+        this.addEventListener(Event.REMOVED_FROM_STAGE, removedFromStageHandler);
+        this.addChild(bgImg);
+        this.addChild(spinnerImg);
+        this.addChild(infoField);
+    }
+
+    public function set status(value:int):void {
+        _status = value;
+    }
+
+    public function set text(value:String):void {
+        infoField.text = value;
+    }
+
+    public function disposeSprite():void {
+        bgImg.dispose();
+        bgTexture.dispose();
+        spinnerImg.dispose();
+        spinnerTexture.dispose();
+        infoField.dispose();
+        this.dispose();
+    }
+
+    private function addedToStageHandler(e:Event):void {
+        stage.addEventListener(EnterFrameEvent.ENTER_FRAME, stage_enterFrameHandler);
+    }
+
+    private function stage_enterFrameHandler(e:EnterFrameEvent):void {
+        spinnerImg.rotation += 0.08;
+
+        switch(_status) {
+            case STATUS_BEGIN_POLAR:
+                infoField.text = "Doing some maths...";
+                _status = STATUS_LOAD_POLAR;
+                break;
+
+            case STATUS_LOAD_POLAR:
+                Assets.loadPolar();
+                _status = STATUS_BEGIN_INSTRUMENTS;
+                break;
+
+            case STATUS_BEGIN_INSTRUMENTS:
+                infoField.text = "Building layouts...";
+                _status = STATUS_LOAD_INSTRUMENTS;
+                break;
+
+            case STATUS_LOAD_INSTRUMENTS:
+                Assets.loadInstruments();
+                _status = STATUS_READY;
+                break;
+
+            case STATUS_READY:
+                break;
+
+            default:
+
+        }
+    }
+
+    private function removedFromStageHandler(e:Event):void {
+        stage.removeEventListener(EnterFrameEvent.ENTER_FRAME, stage_enterFrameHandler);
+    }
+}
+}

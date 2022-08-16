@@ -1,0 +1,60 @@
+/**
+ * Created by seamantec on 28/10/14.
+ */
+package components.stages.messages {
+import flash.events.TimerEvent;
+import flash.utils.Timer;
+
+public class MessagesDataChangeTimer {
+
+    private static var _instance:MessagesDataChangeTimer;
+
+    private var _timer:Timer;
+    private var _container:Vector.<MessagesListItem>;
+
+    function MessagesDataChangeTimer() {
+        _timer = new Timer(33);
+        _timer.addEventListener(TimerEvent.TIMER, timerHandler);
+        _container = new Vector.<MessagesListItem>();
+    }
+
+    public static function get instance():MessagesDataChangeTimer {
+        if(_instance==null) {
+            _instance = new MessagesDataChangeTimer();
+        }
+
+        return _instance;
+    }
+
+    public function addItem(item:MessagesListItem):void {
+        _container.push(item);
+    }
+
+    public function activate():void {
+        if(!_timer.running) {
+            _timer.start();
+        }
+    }
+
+    public function deactivate():void {
+        _timer.stop();
+    }
+
+    private function timerHandler(event:TimerEvent):void {
+        var evenActive:Boolean = false;
+        var length:int = _container.length;
+        var item:MessagesListItem;
+        for(var i:int=0; i<length; i++) {
+            item = _container[i];
+            if(item.activated) {
+                item.timerChanged();
+                evenActive = true;
+            }
+        }
+
+        if(!evenActive) {
+            deactivate();
+        }
+    }
+}
+}

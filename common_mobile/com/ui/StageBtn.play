@@ -1,0 +1,69 @@
+/**
+ * Created by seamantec on 08/09/14.
+ */
+package com.ui {
+import com.common.AppProperties;
+import com.utils.Assets;
+
+import flash.geom.Point;
+
+import starling.display.Button;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+public class StageBtn extends Button {
+
+    private var _upState:Texture;
+    private var _downState:Texture;
+    private var _selected:Boolean;
+
+    private var _touchPoint:Point;
+
+    public function StageBtn(text:String, fontSize:Number = 12) {
+        var fontcolor:uint = 0xffffff;
+        var bold:Boolean = true;
+        _upState = Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("btn1_up");
+        _downState = Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("btn1_down");
+        super(_upState, text, _downState);
+        this.fontColor = fontcolor;
+        this.fontSize = fontSize;
+        this.fontBold = bold;
+        this.fontName = "Amble";
+        this.textVAlign = VAlign.CENTER;
+        this.textHAlign = HAlign.CENTER;
+
+        _selected = false;
+    }
+
+    public function set selected(value:Boolean):void {
+        _selected = value;
+        if (_selected) {
+            this.upState = _downState;
+        } else {
+            this.upState = _upState;
+        }
+    }
+
+    public function get selected():Boolean {
+        return _selected;
+    }
+
+    public function touchIsEnd(e:TouchEvent):Touch {
+        var began:Touch = e.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = e.getTouch(this, TouchPhase.ENDED);
+        if (e.touches.length > 1) {
+            return null;
+        }
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+        } else if (ended && Math.abs(_touchPoint.x - ended.globalX) < EdoMobile.FINGER_SIZE && Math.abs(_touchPoint.y - ended.globalY) < EdoMobile.FINGER_SIZE) {
+            return ended;
+        }
+        return null;
+    }
+}
+}

@@ -1,0 +1,267 @@
+/**
+ * Created by seamantec on 02/03/15.
+ */
+package com.ui {
+import com.utils.Assets;
+import com.utils.FontFactory;
+
+import starling.display.Image;
+import starling.display.Quad;
+
+import starling.display.Sprite;
+import starling.events.Event;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+import starling.text.TextField;
+
+public class Slider extends Sprite {
+
+    public static const _0_1:int = 0;
+    public static const _0_01:int = 1;
+    public static const _1:int = 2;
+    public static const _10:int = 3;
+    public static const _100:int = 4;
+    public static const _0_5:int = 5;
+
+    private const DEF_HEIGHT:int = 18;
+
+    private var _minValue:Number;
+    private var _maxValue:Number;
+    private var _stepInterval:Number;
+    private var _initWidth:int;
+    private var _defHeight:int = 18;
+    private var _tickRuler:Sprite;
+    private var _distanceInPixel:Number;
+    private var _distance:Number;
+    private var _distanceInPixelCorrectionNumber:int = 1;
+    private var _stepInPixel:int
+    private var _numberOfSteps:Number;
+    private var _knob:SliderKnob;
+    private var _sliderType:int = 0;
+    private var _pixelResolution:Number; //how many pixel is one value change
+    private var _actualValue:Number;
+    private var _roundTo:Number;
+    private var _actualAlarmValue:Number;
+    private var _actualAlarmMarker:Sprite;
+    private var _labelColor:uint;
+
+    private var _bg:Image;
+
+    private var _stepInValue:Number = 0;
+    private var _mPlier:int = 4;
+    private var _labelNumberOfSteps:int = 6;
+    private var _labelStepInPixel:int = 0;
+    private var _labelStepInValue:Number = 0;
+
+    private var _enable:Boolean;
+
+    private static var _limitAreaOffset:int = 10;
+
+    private var _actualLabel:Badge;
+
+    private var _isDrag:Boolean = false;
+
+    public function Slider(minValue:Number, maxValue:Number, stepInterval:Number, initWidth:int, sliderType:int, labelColor:uint = 0x000000) {
+        super();
+
+        _minValue = minValue;
+        _maxValue = maxValue;
+        _stepInterval = stepInterval;
+        _initWidth = initWidth;
+        _sliderType = sliderType;
+        _roundTo = stepInterval;
+        _labelColor = labelColor;
+        _enable = true;
+
+        calculateInitValues();
+        createBackground();
+        drawTicks();
+        drawKnob();
+    }
+
+    private function calculateInitValues():void {
+        _mPlier = 4;
+        _distance = _maxValue - _minValue;
+        _pixelResolution = _distance / _initWidth;
+        while (_distance % _labelNumberOfSteps != 0) {
+            _labelNumberOfSteps--;
+        }
+        _stepInValue = _distance / _labelNumberOfSteps;
+        _labelStepInPixel = _initWidth / _labelNumberOfSteps;
+        _labelStepInValue = _distance / _labelNumberOfSteps;
+        var oszto:int = 5;
+        var _minStepInPixel = 60;
+        while (oszto > 0 && _labelStepInPixel / oszto < _minStepInPixel) {
+            oszto--;
+        }
+        //inner small steps
+        _numberOfSteps = oszto;
+        _stepInPixel = _labelStepInPixel / oszto;
+
+        _roundTo = 1;
+        if (_distance < 4) {
+            _roundTo = 0.1;
+        }
+        if (_stepInterval != _roundTo) {
+            _roundTo = _stepInterval;
+            if (_roundTo < 1 && _distance > 1000) {
+                _roundTo = 1;
+            }
+        }
+    }
+
+    private function drawKnob():void {
+        if (_knob == null) {
+            _knob = new SliderKnob();
+            _knob.pivotX = _knob.width/2;
+
+            this.addChild(_knob);
+
+            _actualLabel = new Badge(0,0);
+            _actualLabel.y = _knob.y - _actualLabel.height - 5;
+            this.addChild(_actualLabel);
+
+            _knob.addEventListener(TouchEvent.TOUCH, onTouch);
+//            _knob.addEventListener(MouseEvent.CLICK, triangle_clickHandler, false, 0, true);
+//            _knob.addEventListener(MouseEvent.MOUSE_DOWN, triangle_mouseDownHandler, false, 0, true);
+        }
+    }
+
+    private function createBackground():void {
+        if (_bg != null) return;
+
+        _bg = new Image(Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("slider_bg"));
+        _bg.width = _initWidth + 20;
+        _bg.x = -10;
+        _bg.y = (DEF_HEIGHT - _bg.height) / 2;
+        this.addChild(_bg);
+    }
+
+    private function drawTicks():void {
+        if (_tickRuler == null) {
+            _tickRuler = new Sprite();
+            _tickRuler.x = 0;
+            _tickRuler.y = DEF_HEIGHT;
+            this.addChild(_tickRuler)
+        }
+        if (this._distance == 0) {
+            return;
+        }
+        if (_tickRuler.numChildren > 0) {
+            _tickRuler.removeChildren(0, _tickRuler.numChildren - 1);
+        }
+
+        var tickHeight:int = (int)(DEF_HEIGHT / 4);
+        for (var i:int = 0; i < _labelNumberOfSteps + 1; i++) {
+            drawSingleBigTick(i, tickHeight);
+            for (var j:int = 0; j < _numberOfSteps; j++) {
+                drawSingleTick(i, j, tickHeight);
+            }
+            drawLabels(i, tickHeight);
+        }
+    }
+
+    private function drawSingleTick(i:int, j:int, tickHeight:int):void {
+        var tick:Quad = new Quad(1, tickHeight, 0xffffff);
+        tick.x = (i * _labelStepInPixel) + (j * _stepInPixel);
+        tick.y = 0;
+        _tickRuler.addChild(tick);
+    }
+
+    private function drawSingleBigTick(i:int, tickHeight:int):void {
+        var tick:Quad = new Quad(1, tickHeight, 0xffffff);
+        tick.x = i * _labelStepInPixel;
+        tick.y = 0;
+        _tickRuler.addChild(tick);
+    }
+
+    private function drawLabels(index:int, tickHeight:int):void {
+        var field:TextField = FontFactory.getWhiteCenterFont(30, 16, 12);
+        field.text = Math.round(_minValue + (_labelStepInValue * index)) + "";
+        field.x = (_labelStepInPixel * index) - (field.width / 2);
+        field.y = tickHeight;
+        _tickRuler.addChild(field);
+    }
+
+    private function onTouch(event:TouchEvent):void {
+        var moved:Touch = event.getTouch(this, TouchPhase.MOVED);
+        var ended:Touch = event.getTouch(this, TouchPhase.ENDED);
+        if (moved) {
+//            _slider.moveKnobAlertTo(moved.globalX - _slider.x);
+//            setKnobAlertX();
+//            _quadBatcher.render();
+            _isDrag = true;
+            moveKnob(moved.getLocation(this).x);
+        } else if(ended && _isDrag) {
+            _isDrag = false;
+            dispatchEvent(new Event("sliderDragStop"));
+        }
+    }
+
+//    private function triangle_mouseDownHandler(event:MouseEvent):void {
+//        if(_enable) {
+//            _isDrag = true;
+//            stage.addEventListener(MouseEvent.MOUSE_MOVE, stage_mouseMoveHandler, false, 0, true);
+//            stage.addEventListener(MouseEvent.MOUSE_UP, stage_mouseUpHandler, false, 0, true);
+//        }
+//    }
+//
+//    private function stage_mouseUpHandler(event:MouseEvent):void {
+////        _triangle.stopDrag();
+//        _isDrag = false;
+//        stage.removeEventListener(MouseEvent.MOUSE_MOVE, stage_mouseMoveHandler);
+//        stage.removeEventListener(MouseEvent.MOUSE_UP, stage_mouseUpHandler);
+//        dispatchEvent(new Event("sliderDragStop"));
+//    }
+
+    public function get isDrag():Boolean {
+        return _isDrag;
+    }
+
+//    private function stage_mouseMoveHandler(event:MouseEvent):void {
+//        moveKnob(mouseX);
+//    }
+//
+    private function moveKnob(x:Number):void {
+        var newX:Number = x;
+
+        if (newX < 0) {
+            newX = 0
+        } else if (newX > _initWidth) {
+            newX = _initWidth;
+        }
+        actualValue = Math.round((newX * _pixelResolution + _minValue) / _roundTo) * _roundTo;
+    }
+
+    private function calculateActualX():Number {
+        return (actualValue - _minValue) / _pixelResolution;
+    }
+
+    private function setKnobX(value:Number):void {
+        _knob.x = value;
+        _actualLabel.x = value - (_actualLabel.width / 2);
+    }
+//
+//    private function clickHandler(event:MouseEvent):void {
+//        moveKnob(event.stageX);
+//    }
+
+    public function get actualValue():Number {
+        return _actualValue;
+    }
+
+    public function set actualValue(value:Number):void {
+        _actualValue = Math.round(value * 100) / 100;
+        var calcX:Number = calculateActualX();
+        setKnobX(calcX);
+        _actualLabel.text = _actualValue.toString();
+        dispatchEvent(new Event("actualValueChanged"))
+    }
+
+    public function set enable(value:Boolean):void {
+        _knob.alpha = (value) ? 1 : 0.5;
+        _enable = value;
+    }
+}
+}

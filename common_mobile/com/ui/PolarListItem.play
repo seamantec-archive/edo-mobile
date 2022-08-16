@@ -1,0 +1,109 @@
+/**
+ * Created by seamantec on 18/02/15.
+ */
+package com.ui {
+import com.common.AppProperties;
+import com.harbor.PolarFile;
+import com.inAppPurchase.CommonStore;
+import com.polar.PolarContainer;
+import com.polar.PolarEvent;
+import com.utils.FontFactory;
+
+import components.instruments.PolarControl;
+
+import components.lists.ListItem;
+
+import starling.events.Event;
+
+import starling.events.TouchEvent;
+
+public class PolarListItem extends ListItem {
+
+    public static const HEIGHT:int = EdoMobile.FINGER_SIZE;
+
+    private var _control:PolarControl;
+    private var _polarFile:PolarFile;
+
+    private var _active:Boolean;
+
+    public function PolarListItem(control:PolarControl, polarFile:PolarFile) {
+        super(control.selector.width,HEIGHT, 0xc9c9c9);
+
+        _control = control;
+        _polarFile = polarFile;
+
+        this.addLabel(_polarFile.name, FontFactory.getBlackLeftFont(width-8,HEIGHT, (HEIGHT/2) - (4*AppProperties.screenScaleRatio)), 4);
+        _labels[0].autoScale = true;
+
+        _active = false;
+
+        this.addEventListener(TouchEvent.TOUCH, onSelect);
+    }
+
+    public function get polarFile():PolarFile {
+        return _polarFile;
+    }
+
+    public function get id():String {
+        return _polarFile.id;
+    }
+
+    public function get active():Boolean {
+        return _active;
+    }
+
+    public function set active(value:Boolean):void {
+        _active = value;
+    }
+
+    private function onSelect(e:TouchEvent):void {
+        if(touchIsEnd(e)) {
+            activate();
+            _control.list.visible = false;
+        }
+    }
+
+    public function activate():void {
+        if (CommonStore.instance.isPolarEnabled && _polarFile.hasFile()) {
+            PolarContainer.instance.addEventListener(PolarEvent.POLAR_FILE_LOADED, onPolarFileLoaded);
+            PolarContainer.instance.addEventListener("bad-extension", onPolarFileWarning);
+            PolarContainer.instance.addEventListener("bad-file", onPolarFileWarning);
+            PolarContainer.instance.addEventListener("too-large", onPolarFileWarning);
+
+            EdoMobile.polarLoadingScreen.polarFile = _polarFile;
+        }
+    }
+
+    private function onPolarFileLoaded(e:Event):void {
+        EdoMobile.polarLoadingScreen.visible = false;
+
+//        _active = true;
+        setActive();
+        _control.label.text = _polarFile.name;
+        _control.control.render();
+
+        PolarContainer.instance.removeEventListener(PolarEvent.POLAR_FILE_LOADED, onPolarFileLoaded);
+        PolarContainer.instance.removeEventListener("bad-extension", onPolarFileWarning);
+        PolarContainer.instance.removeEventListener("bad-file", onPolarFileWarning);
+        PolarContainer.instance.removeEventListener("too-large", onPolarFileWarning);
+    }
+
+    private function onPolarFileWarning(e:Event):void {
+        EdoMobile.polarLoadingScreen.visible = false;
+
+        PolarContainer.instance.removeEventListener(PolarEvent.POLAR_FILE_LOADED, onPolarFileLoaded);
+        PolarContainer.instance.removeEventListener("bad-extension", onPolarFileWarning);
+        PolarContainer.instance.removeEventListener("bad-file", onPolarFileWarning);
+        PolarContainer.instance.removeEventListener("too-large", onPolarFileWarning);
+    }
+
+    private function setActive():void {
+        var length:int = _control.list.length;
+        var item:PolarListItem;
+        for(var i:int=0; i<length; i++) {
+            item = _control.list.getItem(i) as PolarListItem;
+            item.active = (item==this);
+        }
+    }
+}
+}

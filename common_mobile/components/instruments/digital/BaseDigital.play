@@ -1,0 +1,322 @@
+/**
+ * Created by pepusz on 15. 01. 08..
+ */
+package components.instruments.digital {
+
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentAtlas;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.inAppPurchase.CommonStore;
+import com.sailing.SailData;
+import com.sailing.Splitter;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.minMax.MinMax;
+import com.sailing.units.Angle;
+import com.sailing.units.Direction;
+import com.sailing.units.Unit;
+import com.sailing.units.WindDirection;
+import com.ui.DigitalDropdownList;
+import com.ui.DigitalDropdownListItem;
+import com.utils.Blinker;
+import com.utils.ListContainer;
+import com.utils.SaveHandler;
+
+import components.lists.List;
+import components.lists.ListItem;
+
+import flash.geom.Point;
+
+import starling.events.Touch;
+import starling.events.TouchEvent;
+
+public class BaseDigital extends BaseInstrument {
+
+    private const VISIBLE_ITEM_COUNT:int = 3;
+
+    private var _item:DigitalDropdownListItem;
+
+    public var actualState:String = "";
+
+    private var _list:List;
+
+    private var _hasValue:Boolean;
+
+    private var _datas:SailData;
+
+    protected var backgroundBatch:InstrumentQuadBatcher;
+    protected var background:DynamicSprite;
+    protected var digital:DynamicSprite;
+
+    public function BaseDigital(instrumentAtlas:InstrumentAtlas) {
+        super(instrumentAtlas);
+
+        backgroundBatch.quadBatch.addEventListener(TouchEvent.TOUCH, selectorChangeEvent);
+        digital["label1"].addEventListener(TouchEvent.TOUCH, selectorChangeEvent);
+
+        initList();
+
+        setInvalid();
+        uchange();
+    }
+
+    public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        _datas = datas;
+
+        if (_datas != null && _datas[_item.key].isValid()) {
+            setValue(_item, !_hasValue);
+            if (!_hasValue) {
+                _hasValue = true;
+            }
+        }
+    }
+
+    public override function updateState(stateType:String):void {
+        setState(stateType);
+    }
+
+    public override function dataInvalidated(key:String):void {
+        var item:DigitalDropdownListItem;
+        for (var i:int = 0; i < DigitalDropdownList.ITEM_COUNT; i++) {
+            item = DigitalDropdownList.getInstance().getItem(i);
+            if (item.key == key) {
+                item.value = new Unit();
+                if (item.hasMinMax) {
+                    (minMaxVars[item.key + "." + item.data] as MinMax).reset((minMaxVars[item.key + "." + item.data] as MinMax).unitClass);
+                }
+            }
+        }
+
+        if (key === _item.key) {
+            removeBlinker();
+            if (_item.hasMinMax) {
+                (minMaxVars[_item.key + "." + _item.data] as MinMax).reset((minMaxVars[_item.key + "." + _item.data] as MinMax).unitClass);
+            }
+            setInvalid();
+        }
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if (key === _item.key && _item.value.isValidValue() && getDataEnabled(_item.key)) {
+            addBlinker();
+        }
+    }
+
+    public override function unitChanged():void {
+        uchange();
+    }
+
+    public override function minMaxChanged():void {
+        setMinMax();
+    }
+
+    private function setState(value:String):void {
+        actualState = value;
+        var index:int = parseInt(actualState, 10);
+        if (index == -1) {
+            _item = DigitalDropdownList.getInstance().getItem(0);
+            digital["label1"].text = _item.label;
+        } else {
+            _item = DigitalDropdownList.getInstance().getItem(parseInt(value, 10));
+            digital["label1"].text = _item.label;
+        }
+        setMinMax();
+
+//            selectorBatch.render();
+    }
+
+    private function setInState():void {
+        actualState = DigitalDropdownList.getInstance().getItemIndex(_item).toString();
+
+        SaveHandler.instance.setState(_id, actualState);
+    }
+
+    private function setMinMax():void {
+        if (_item.hasMinMax && getDataEnabled(_item.key)) {
+            var min:Number = (minMaxVars[_item.key + "." + _item.data] as MinMax).min;
+            var max:Number = (minMaxVars[_item.key + "." + _item.data] as MinMax).max;
+            if (!isNaN(min) && !isNaN(max)) {
+                digital["digimin1"]["digi_a"].text = Splitter.withValue(min).a3;
+                digital["digimin1"]["digi_b"].text = Splitter.instance.b1;
+                digital["digimax1"]["digi_a"].text = Splitter.withValue(max).a3;
+                digital["digimax1"]["digi_b"].text = Splitter.instance.b1;
+            } else {
+                setMinMaxLabelInvalid();
+            }
+        } else {
+            setMinMaxLabelInvalid();
+        }
+    }
+
+    private function addBlinker():void {
+        Blinker.addObject(digital["digi1"]["digi_a"]);
+        Blinker.addObject(digital["digi1"]["digi_b"]);
+    }
+
+    private function removeBlinker():void {
+        Blinker.removeObject(digital["digi1"]["digi_a"]);
+        Blinker.removeObject(digital["digi1"]["digi_b"]);
+    }
+
+    private function setInvalid():void {
+        if (_item.hasMinMax) {
+            if ((minMaxVars[_item.key + "." + _item.data] as MinMax).reseted) {
+                setMinMaxLabelInvalid();
+            }
+        }
+        setValueLabelInvalid();
+
+        digital["degree"].visible = false;
+        digital["degree_s"].visible = false;
+        digital["degree_p"].visible = false;
+        digital["unit"].visible = false;
+
+        _hasValue = false;
+    }
+
+    private function selectorChangeEvent(e:TouchEvent):void {
+        var touch:Touch = touchIsEnd(e);
+        if (touch != null) {
+            var p:Point = touch.getLocation(this);
+            if (ListContainer.instance.active != _list && p.x >= background["selector"].x && p.y >= background["selector"].y && p.x <= (background["selector"].x + background["selector"].width) && p.y <= (background["selector"].x + background["selector"].height)) {
+                _list.visible = true;
+            }
+        }
+    }
+
+    private function initList():void {
+        _list = new List(background["selector"].x, background["selector"].y + background["selector"].height, background["selector"].width, DigitalDropdownList.ITEM_HEIGHT * VISIBLE_ITEM_COUNT, 0xc9c9c9, 1);
+        _list.visible = false;
+
+        ListContainer.instance.add(_list);
+
+        _list.addScrollBar("digital_sbar");
+        var dddList:DigitalDropdownList = DigitalDropdownList.getInstance(background["selector"].width);
+        var item:ListItem = ListItem.fromTexture(dddList.texture, dddList.w, dddList.h);
+        item.addEventListener(TouchEvent.TOUCH, selectHandler);
+
+        _list.addItem(item);
+        _item = DigitalDropdownList.getInstance().getItem(0);
+
+        initMinMax();
+
+        digital.addChild(_list);
+    }
+
+    protected override function initMinMax():void {
+        var item:DigitalDropdownListItem;
+        for (var i:int = 0; i < DigitalDropdownList.ITEM_COUNT; i++) {
+            item = DigitalDropdownList.getInstance().getItem(i);
+            if (item.hasMinMax) {
+                minMaxVars[item.key + "." + item.data] = new MinMax(undefined, undefined, this);
+            }
+        }
+    }
+
+    private function selectHandler(e:TouchEvent):void {
+        var touch:Touch = touchIsEnd(e);
+        if (touch) {
+            var index:int = Math.floor(touch.getLocation(_list.getItem(0)).y / DigitalDropdownList.ITEM_HEIGHT);
+            _item = DigitalDropdownList.getInstance().getItem(index);
+            _list.scrollToPosition(index * DigitalDropdownList.ITEM_HEIGHT);
+
+            digital["label1"].text = _item.label;
+            _list.visible = false;
+            if (_datas != null) {
+                setValue(_item, true);
+
+                if (!_datas[_item.key].isInValid) {
+                    setInvalid();
+                } else if (!_datas[_item.key].isInPreValid && _item.value.isValidValue() && getDataEnabled(_item.key)) {
+                    addBlinker();
+                }
+            }
+
+            setMinMax();
+            setInState();
+        }
+    }
+
+    private function uchange():void {
+        if (_datas != null && !_datas[_item.key].isInValid) {
+            setUnit(_item.value);
+
+            setValueLabel(_item.value.value);
+        } else {
+            setInvalid();
+        }
+    }
+
+    private function setValue(item:DigitalDropdownListItem, updateUnit:Boolean = false):void {
+        removeBlinker();
+        if (_datas[item.key][item.data] is Unit) {
+            _item.value = _datas[item.key][item.data];
+        } else {
+            _item.value.value = _datas[item.key][item.data];
+        }
+        if (updateUnit) setUnit(_item.value);
+        if (_item.value.isValidValue() && getDataEnabled(_item.key)) {
+            if (_item.value is Angle && !(_item.value is WindDirection)) {
+                if (_item.value.value > 0) {
+                    if (!digital["degree_s"].visible) {
+                        digital["degree_p"].visible = false;
+                        digital["degree_s"].visible = true;
+//                            unitBatch.render();
+                    }
+                } else {
+                    if (!digital["degree_p"].visible) {
+                        digital["degree_s"].visible = false;
+                        digital["degree_p"].visible = true;
+//                            unitBatch.render();
+                    }
+                }
+                setValueLabel(Math.abs(_item.value.value));
+            } else {
+                setValueLabel(_item.value.value);
+            }
+        } else {
+            setInvalid();
+        }
+    }
+
+    private function setValueLabel(value:Number):void {
+        digital["digi1"]["digi_a"].text = Splitter.withValue(value).a3;
+        digital["digi1"]["digi_b"].text = Splitter.instance.b1;
+    }
+
+    private function setUnit(data:Unit):void {
+        digital["degree"].visible = false;
+        digital["degree_s"].visible = false;
+        digital["degree_p"].visible = false;
+        digital["unit"].visible = false;
+
+        if (data is Angle || data is WindDirection || data is Direction) {
+            digital["degree"].visible = true;
+        } else {
+            digital["unit"].visible = true;
+            digital["unit"].text = (data as Unit).getUnitShortString();
+        }
+
+//            unitBatch.render();
+    }
+
+    private function setMinMaxLabelInvalid():void {
+        digital["digimin1"]["digi_a"].text = "---";
+        digital["digimin1"]["digi_b"].text = "-";
+        digital["digimax1"]["digi_a"].text = "---";
+        digital["digimax1"]["digi_b"].text = "-";
+    }
+
+    private function setValueLabelInvalid():void {
+        digital["digi1"]["digi_a"].text = "---";
+        digital["digi1"]["digi_b"].text = "-";
+    }
+
+    public override function get enabled():Boolean {
+        return true;
+    }
+
+    private function getDataEnabled(key:String):Boolean {
+        return (key == "performance") ? CommonStore.instance.isPolarEnabled : CommonStore.instance.isInstrumentsEnabled;
+    }
+}
+}

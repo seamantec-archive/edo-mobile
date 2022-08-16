@@ -1,0 +1,31 @@
+/**
+ * Created by pepusz on 15. 03. 17..
+ */
+package com.polar {
+public class AutoPolarLayer extends GhostPolarLayer {
+
+
+    public function AutoPolarLayer(parent:PolarLayer) {
+        super(parent);
+
+    }
+
+    protected override function calculatePixelDimensions():void {
+        _pixelPerSpeed = (PolarLayer.DIAMETER - PolarLayer.MARGIN) / parentLayer.maxPolarSpeed;
+    }
+
+    protected override function createPolarBitmapData():void {
+        if (_polarBitmapData != null) {
+            return;
+        }
+
+        super.createPolarBitmapData();
+        _polarBitmapData.draw(_circlesBitmap);
+    }
+
+
+    override protected function getMaxForCircles():int {
+        return Math.floor(parentLayer.maxPolarSpeed);
+    }
+}
+}

@@ -1,0 +1,128 @@
+/**
+ * Created by pepusz on 14. 11. 27..
+ */
+package com.inAppPurchase {
+import com.sailing.minMax.MinMaxHandler;
+import com.store.AES;
+
+import flash.net.SharedObject;
+
+import starling.events.Event;
+import starling.events.EventDispatcher;
+
+//import flash.data.EncryptedLocalStore;
+public class CommonStore extends EventDispatcher {
+    DS::mobile{
+        public static const alarmProductId:String = "com.seamantec.mobile.inapp.alarm";
+        public static const instrumentsProductId:String = "com.seamantec.mobile.inapp.instruments";
+        public static const polarProductId:String = "com.seamantec.mobile.inapp.polar";
+    }
+
+    DS::ipad{
+        public static const alarmProductId:String = "com.seamantec.tablet.inapp.alarm";
+        public static const instrumentsProductId:String = "com.seamantec.tablet.inapp.instruments";
+        public static const polarProductId:String = "com.seamantec.tablet.inapp.polar";
+    }
+    private static var _instance:CommonStore;
+    private var _isAlarmEnabled:Boolean = false;
+    private var _isInstrumentsEnabled:Boolean = false;
+    private var _isPolarEnabled:Boolean = false;
+    private var localStoreObject:SharedObject;
+
+
+    public function CommonStore() {
+        localStoreObject = SharedObject.getLocal("edoMobile");
+    }
+
+    public function loadBackValues():void {
+        var encryptedData:String = localStoreObject.data["alarm-store"] as String;
+        if (encryptedData != null && encryptedData !== "") {
+            var alarmCode:String = AES.decrypt(encryptedData, "SeamantecEdoInstrumentsKey");
+            if (alarmCode == alarmProductId) {
+                setAlarmEnabled();
+            }
+        }
+
+        encryptedData = localStoreObject.data["instruments-store"];
+        if (encryptedData != null && encryptedData != "") {
+            var instrCode:String = AES.decrypt(encryptedData, "SeamantecEdoInstrumentsKey");
+            if (instrCode == instrumentsProductId) {
+                setInstrumentsEnabled();
+            }
+        }
+
+        encryptedData = localStoreObject.data["polar-store"];
+        if (encryptedData != null && encryptedData != "") {
+            var polarCode:String = AES.decrypt(encryptedData, "SeamantecEdoInstrumentsKey");
+            if (polarCode == polarProductId) {
+                setPolarEnabled();
+            }
+        }
+
+        DS::emu{
+            _isAlarmEnabled = true;
+            _isInstrumentsEnabled = true;
+            _isPolarEnabled = true;
+            setAlarmEnabled()
+            setInstrumentsEnabled()
+            setPolarEnabled()
+        }
+    }
+
+    public function activateAlarm():void {
+        localStoreObject.data["alarm-store"] = AES.encrypt(alarmProductId, "SeamantecEdoInstrumentsKey", "SeamantecIv");
+        localStoreObject.flush();
+        setAlarmEnabled();
+    }
+
+    private function setAlarmEnabled():void {
+        _isAlarmEnabled = true;
+        dispatchEvent(new Event("alarm-enabled"));
+    }
+
+    public function activateInstruments():void {
+        localStoreObject.data["instruments-store"] = AES.encrypt(instrumentsProductId, "SeamantecEdoInstrumentsKey", "SeamantecIv");
+        localStoreObject.flush();
+        setInstrumentsEnabled();
+    }
+
+    private function setInstrumentsEnabled():void {
+        _isInstrumentsEnabled = true;
+        MinMaxHandler.instance.datasourceChanged();
+        dispatchEvent(new Event("instruments-enabled"));
+    }
+
+    public function activatePolar():void {
+        localStoreObject.data["polar-store"] = AES.encrypt(polarProductId, "SeamantecEdoInstrumentsKey", "SeamantecIv");
+        localStoreObject.flush();
+        setPolarEnabled();
+    }
+
+    private function setPolarEnabled():void {
+        _isPolarEnabled = true;
+        dispatchEvent(new Event("polar-enabled"));
+    }
+
+    public function get isAlarmEnabled():Boolean {
+        return _isAlarmEnabled;
+//        return true;
+    }
+
+    public function get isInstrumentsEnabled():Boolean {
+        return _isInstrumentsEnabled;
+//        return true;
+    }
+
+    public function get isPolarEnabled():Boolean {
+        return _isPolarEnabled;
+//        return true;
+    }
+
+    public static function get instance():CommonStore {
+        if (_instance === null) {
+            _instance = new CommonStore();
+        }
+        return _instance;
+    }
+}
+}

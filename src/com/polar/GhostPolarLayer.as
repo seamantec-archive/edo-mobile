@@ -1,0 +1,315 @@
+/**
+ * Created by pepusz on 15. 03. 17..
+ */
+package com.polar {
+import com.common.AppProperties;
+import com.utils.FontFactory;
+
+import flash.display.BitmapData;
+import flash.display.GraphicsPathCommand;
+import flash.display.Shape;
+import flash.text.AntiAliasType;
+import flash.text.TextField;
+import flash.text.TextFieldAutoSize;
+import flash.text.TextFormat;
+import flash.text.TextFormatAlign;
+
+import starling.display.Image;
+import starling.display.Sprite;
+import starling.textures.Texture;
+import starling.utils.deg2rad;
+
+public class GhostPolarLayer extends Sprite {
+    protected var parentLayer:PolarLayer;
+    protected var _pixelPerSpeed:Number;
+
+
+    protected var _vmgImages:Vector.<Image> = new Vector.<Image>();
+    protected var _windImages:Vector.<Image> = new Vector.<Image>();
+
+    protected var _commands:Vector.<int> = new Vector.<int>()
+    protected var _coords:Vector.<Number> = new Vector.<Number>();
+
+    protected var _polarBitmapData:BitmapData;
+    protected var _polarImg:Image;
+
+    protected var _circles:Vector.<int> = new <int>[];
+    protected var _circlesBitmap:BitmapData;
+
+    protected static var textFormater:TextFormat;
+
+    public function GhostPolarLayer(parent:PolarLayer) {
+        this.parentLayer = parent;
+        calculatePixelDimensions();
+        if (textFormater == null) {
+            textFormater = new TextFormat();
+            textFormater.align = TextFormatAlign.LEFT;
+            textFormater.font = FontFactory.arialText;
+            textFormater.size = 12;
+            textFormater.color = 0xE0E0E0;
+        }
+    }
+
+    public function activate():void {
+        _polarImg = createPolarImageFromTexture(createPolarTexture())
+        this.addChild(_polarImg);
+        this.visible = true;
+    }
+
+    public function deactivate():void {
+        disposePolars();
+        if (AppProperties.isJunkIpad) {
+            deleteBitmapData();
+        }
+        this.visible = false;
+    }
+
+    public function reset():void {
+        disposePolars();
+        deleteBitmapData();
+        _coords.length = 0;
+        _commands.length = 0;
+        resetWindImages();
+    }
+
+    private function deleteBitmapData():void {
+        if (_polarBitmapData != null) {
+            _polarBitmapData.dispose();
+            _polarBitmapData = null;
+        }
+        if (_circlesBitmap != null) {
+            _circlesBitmap.dispose();
+            _circlesBitmap = null;
+        }
+    }
+
+    private function resetWindImages():void {
+        for (var i:int = _windImages.length - 1; i >= 0; i--) {
+            if (this.contains(_windImages[i])) {
+                this.removeChild(_windImages[i])
+            }
+            _windImages[i].dispose()
+            _windImages[i] = null;
+        }
+        _windImages.length = 0;
+    }
+
+    protected function disposePolars():void {
+        if (_polarImg == null) return;
+        _polarImg.texture.dispose();
+        _polarImg.dispose();
+        if (this.contains(_polarImg)) {
+            this.removeChild(_polarImg);
+        }
+    }
+
+    public function draw(withBitmap:Boolean = false) {
+        if (parentLayer.isPolarValid()) {
+            calculatePixelDimensions();
+            calculateCircles();
+            var polarTable:PolarTable = PolarContainer.instance.polarTableFromFile;
+            beginPolar();
+            var pbs:PolarBoatSpeed
+            for (var i = 0; i < 360; i++) {
+                pbs = polarTable.getValueForWSpeedAndDirection(parentLayer.windSpeed, i);
+                if (pbs == null) {
+                    continue;
+                }
+                addPolarCoord(pbs.cardinalHardCalculated, i);
+            }
+            if (!AppProperties.isJunkIpad || withBitmap) {
+                createPolarBitmapData();
+            }
+            addVmgs()
+        }
+    }
+
+    protected function beginPolar():void {
+        _commands.length = 0;
+        _coords.length = 0;
+        initPolarPath();
+    }
+
+    protected function initPolarPath():void {
+        _commands.push(GraphicsPathCommand.MOVE_TO);
+        _coords.push(PolarLayer.DIAMETER);
+        _coords.push(PolarLayer.DIAMETER);
+    }
+
+
+    protected function addPolarCoord(speed:Number, direction:Number):void {
+        _commands.push(GraphicsPathCommand.LINE_TO);
+        _coords.push(speed * _pixelPerSpeed * Math.cos(deg2rad(direction - 90)) + PolarLayer.DIAMETER);
+        _coords.push(speed * _pixelPerSpeed * Math.sin(deg2rad(direction - 90)) + PolarLayer.DIAMETER);
+    }
+
+
+    protected function createPolarTexture():Texture {
+        createPolarBitmapData()
+        return Texture.fromBitmapData(_polarBitmapData, false)
+    }
+
+
+    protected function createPolarBitmapData():void {
+        if (_polarBitmapData != null) {
+            return
+        }
+        _polarBitmapData = new BitmapData(PolarLayer.DIAMETER * 2, PolarLayer.DIAMETER * 2, true, 0x0);
+        _polarBitmapData.draw(createPolarShape());
+        drawCircles()
+
+    }
+
+    protected function createPolarImageFromTexture(texture:Texture):Image {
+        var polar:Image = new Image(texture);
+        polar.scaleX = 1 / AppProperties.screenScaleRatio;
+        polar.scaleY = 1 / AppProperties.screenScaleRatio;
+        return polar;
+    }
+
+    protected function createPolarShape():Shape {
+        var shape:Shape = new Shape();
+        shape.graphics.lineStyle(1, parentLayer.color);
+        shape.graphics.drawPath(_commands, _coords);
+        return shape;
+    }
+
+
+    protected function calculateCircles():void {
+        _circles.length = 0;
+        var max:int = getMaxForCircles()
+        if (max <= 0) {
+            return;
+        }
+        var stepIntervall:int = Math.ceil(max / 6);
+        var step:int = stepIntervall;
+        do {
+            _circles.push(step);
+            step += stepIntervall;
+        } while (step <= max);
+    }
+
+    protected function drawCircles():void {
+        if (_circlesBitmap != null) {
+            return
+        }
+        _circlesBitmap = new BitmapData(PolarLayer.DIAMETER * 2, PolarLayer.DIAMETER * 2, true, 0x0);
+        var shape:Shape = new Shape();
+        shape.graphics.lineStyle(1, 0x333333);       //
+        for (var i:int = _circles.length - 1; i >= 0; i--) {
+            shape.graphics.drawCircle(PolarLayer.DIAMETER, PolarLayer.DIAMETER, int(_circles[i] * _pixelPerSpeed));
+        }
+        _circlesBitmap.draw(shape);
+        var s:tfSprite = new tfSprite()
+
+        for (var i:int = _circles.length - 1; i >= 0; i--) {
+            var tf:TextField = new TextField()
+            tf.autoSize = TextFieldAutoSize.LEFT;
+            tf.selectable = false;
+            tf.background = false;
+            tf.defaultTextFormat = textFormater;
+            tf.antiAliasType = AntiAliasType.ADVANCED;
+            tf.embedFonts = true;
+            tf.x = PolarLayer.DIAMETER;
+            tf.y = PolarLayer.DIAMETER - int(_circles[i] * _pixelPerSpeed) - 8;
+            tf.text = _circles[i].toString();
+            s.addChild(tf)
+        }
+        _circlesBitmap.draw(s)
+
+        for (var i:int = s.numChildren - 1; i >= 0; i--) {
+            var tf:TextField = s.removeChildAt(i) as TextField;
+            tf = null;
+        }
+        s = null;
+    }
+
+    protected function getMaxForCircles():int {
+        return Math.floor(parentLayer.maxBoatSpeed);
+    }
+
+
+    protected function calculatePixelDimensions() {
+        _pixelPerSpeed = PolarLayer.DIAMETER / parentLayer.maxBoatSpeed;
+    }
+
+
+    public function get pixelPerSpeed():Number {
+        return _pixelPerSpeed;
+    }
+
+
+    public function get polarBitmapData():BitmapData {
+        return _polarBitmapData;
+    }
+
+
+    public function get circlesBitmap():BitmapData {
+        return _circlesBitmap;
+    }
+
+    private function addVmgs():void {
+        var polarTable:PolarTable = PolarContainer.instance.polarTableFromFile;
+        for (var i:int = 0; i <= 3; i++) {
+            var vmg:BestVmg = (polarTable.bestVmg[parentLayer.windSpeed] != null) ? polarTable.bestVmg[parentLayer.windSpeed][i] : null;
+            if (vmg == null) {
+                continue;
+            }
+            createVmg(i, vmg.boatSpeed, vmg.angle);
+        }
+    }
+
+
+    private function createVmg(index:int, speed:Number, direction:Number):void {
+        var vmg:Image;
+        if (index < _vmgImages.length) {
+            vmg = _vmgImages[index];
+        } else {
+            vmg = new Image(parentLayer.vmgTexture);
+            vmg.scaleX = 1 / AppProperties.screenScaleRatio;
+            vmg.scaleY = 1 / AppProperties.screenScaleRatio;
+            vmg.alignPivot();
+            _vmgImages.push(vmg);
+            this.addChild(vmg);
+        }
+        vmg.x = getX(speed, direction);
+        vmg.y = getY(speed, direction);
+    }
+
+    public function addWind(index:int, speed:Number, direction:Number, alpha:Number):void {
+        createWind(index, speed, direction, alpha);
+
+    }
+
+    private function createWind(index:int, speed:Number, direction:Number, alpha:Number):void {
+
+
+        if (speed <= getMaxForCircles()) {
+            var wind:Image;
+            if (index < _windImages.length) {
+                wind = _windImages[index];
+            } else {
+                wind = new Image(parentLayer.windDotTexture);
+                wind.scaleX = 1 / AppProperties.screenScaleRatio;
+                wind.scaleY = 1 / AppProperties.screenScaleRatio;
+                wind.alignPivot();
+                _windImages.push(wind);
+                this.addChild(wind);
+            }
+            wind.alpha = alpha;
+            wind.x = getX(speed, direction);
+            wind.y = getY(speed, direction);
+        }
+    }
+
+    public function getX(speed:Number, direction:Number):Number {
+        return (speed * _pixelPerSpeed * Math.cos(deg2rad(direction - 90)) + PolarLayer.DIAMETER) / AppProperties.screenScaleRatio;
+    }
+
+    public function getY(speed:Number, direction:Number):Number {
+        return (speed * _pixelPerSpeed * Math.sin(deg2rad(direction - 90)) + PolarLayer.DIAMETER) / AppProperties.screenScaleRatio;
+    }
+
+
+}
+}

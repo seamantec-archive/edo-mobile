@@ -1,0 +1,177 @@
+/**
+ * Created by pepusz on 2014.09.22..
+ */
+package com.dynamicInstruments {
+import com.common.AppProperties;
+
+import flash.geom.Point;
+import flash.geom.Rectangle;
+import flash.utils.Dictionary;
+
+import starling.display.Image;
+import starling.display.Sprite;
+import starling.text.TextField;
+import starling.textures.Texture;
+import starling.utils.VAlign;
+
+public class TextureAtlasWithPivot extends TextureAtlas {
+    protected var mTextfieldInfos:Dictionary;
+
+    public function TextureAtlasWithPivot(texture:Texture, atlasXml:XML = null) {
+        mTextfieldInfos = new Dictionary();
+        super(texture, atlasXml)
+    }
+
+    override protected function parseAtlasXml(atlasXml:XML):void {
+        var scale:Number = texture.scale;
+
+        for each (var subTexture:XML in atlasXml.SubTexture) {
+            var name:String = subTexture.attribute("name");
+            var parent:String = subTexture.attribute("parent");
+            var x:Number = parseFloat(subTexture.attribute("x")) / scale;
+            var y:Number = parseFloat(subTexture.attribute("y")) / scale;
+            var width:Number = parseFloat(subTexture.attribute("width")) / scale;
+            var height:Number = parseFloat(subTexture.attribute("height")) / scale;
+            var frameX:Number = parseFloat(subTexture.attribute("frameX")) / scale;
+            var frameY:Number = parseFloat(subTexture.attribute("frameY")) / scale;
+            var frameWidth:Number = parseFloat(subTexture.attribute("frameWidth")) / scale;
+            var frameHeight:Number = parseFloat(subTexture.attribute("frameHeight")) / scale;
+            var pivotX:Number = parseFloat(subTexture.attribute("pivotX")) / scale;
+            var pivotY:Number = parseFloat(subTexture.attribute("pivotY")) / scale;
+            var originX:Number = parseFloat(subTexture.attribute("originX")) / scale;
+            var originY:Number = parseFloat(subTexture.attribute("originY")) / scale;
+            var zIndex:int = parseFloat(subTexture.attribute("zIndex"));
+            var rotated:Boolean = parseBool(subTexture.attribute("rotated"));
+            var visible:Boolean = parseBool(subTexture.attribute("visible"));
+
+            var region:Rectangle = new Rectangle(x, y, width, height);
+            var frame:Rectangle = frameWidth > 0 && frameHeight > 0 ?
+                    new Rectangle(frameX, frameY, frameWidth, frameHeight) : null;
+
+            addRegionWithPivot(name, region, frame, rotated, pivotX, pivotY, parent, originX, originY, zIndex, visible);
+        }
+
+        parseTextfield(atlasXml)
+    }
+
+    private function parseTextfield(atlasXml:XML):void {
+        var scale:Number = texture.scale;
+
+        for each(var textField:XML in atlasXml.TextField) {
+            var name:String = textField.attribute("name");
+            var fontFace:String = textField.attribute("fontFace");
+            var defaultText:String = textField.attribute("defaultText");
+            var fontSize:Number = parseFloat(textField.attribute("fontSize"));
+            var x:Number = parseFloat(textField.attribute("x")) / scale;
+            var y:Number = parseFloat(textField.attribute("y")) / scale;
+            var width:Number = parseFloat(textField.attribute("width")) / scale;
+            var height:Number = parseFloat(textField.attribute("height")) / scale;
+            var color:Number = parseFloat(textField.attribute("color"));
+            var zIndex:Number = parseFloat(textField.attribute("zIndex"));
+            mTextfieldInfos[name] = new TextfieldInfo(name, fontFace, defaultText, fontSize, x, y, width, height, color, zIndex);
+        }
+    }
+
+    public function getTextField(name:String):TextField {
+        var textInfo:TextfieldInfo = mTextfieldInfos[name]
+        if (textInfo == null) return null;
+        var tf:TextField = new TextField(textInfo.width, textInfo.height, textInfo.defaultText, textInfo.fontFace, textInfo.fontSize/AppProperties.screenScaleRatio, textInfo.color)
+//        tf.x = 50;
+//        tf.y = 50;
+        tf.vAlign = VAlign.CENTER;
+        tf.x = textInfo.x;
+        tf.y = textInfo.y;
+        return tf;
+    }
+
+    public function getComponentAsImage(name:String):Image {
+        var img:Image = new Image(getTexture(name))
+        var textureInfo:TextureInfo = mTextureInfos[name]
+        if (textureInfo == null) return null;
+        img.pivotX = textureInfo.pivot.x
+        img.pivotY = textureInfo.pivot.y
+        img.x = textureInfo.originLocation.x
+        img.y = textureInfo.originLocation.y
+        img.visible = textureInfo.visible;
+        return img;
+    }
+
+    public function getComponentAsImageNoPosition(name:String):Image {
+        var img:Image = new Image(getTexture(name))
+
+        return img;
+    }
+
+    public function getComponentAsSprite(name:String):Sprite {
+        var s:Sprite = new Sprite();
+        var textureInfo:TextureInfo = mTextureInfos[name]
+        if (textureInfo == null) return null;
+
+        s.addChild(new Image(getTexture(name)))
+        s.pivotX = textureInfo.pivot.x
+        s.pivotY = textureInfo.pivot.y
+        s.x = textureInfo.originLocation.x
+        s.y = textureInfo.originLocation.y
+        s.visible = textureInfo.visible;
+        return s;
+    }
+
+    public function getComponentAsCustomClass(name:String, klass:Class):Sprite {
+        var s:* = new klass();
+        var textureInfo:TextureInfo = mTextureInfos[name]
+        if (textureInfo == null) return null;
+
+        s.addChild(new Image(getTexture(name)))
+        s.pivotX = textureInfo.pivot.x
+        s.pivotY = textureInfo.pivot.y
+        s.x = textureInfo.originLocation.x
+        s.y = textureInfo.originLocation.y
+        s.visible = textureInfo.visible;
+        return s;
+    }
+
+    public function addRegionWithPivot(name:String, region:Rectangle, frame:Rectangle = null, rotated:Boolean = false, pivotX:Number = 0, pivotY:Number = 0, parent = "", originX:Number = 0, originY:Number = 0, zIndex:int = 0, visible:Boolean = true):void {
+        mTextureInfos[name] = new TextureInfo(region, frame, rotated, new Point(pivotX, pivotY), parent, new Point(originX, originY), zIndex, visible);
+    }
+
+    public function getTextureInfos():Dictionary {
+        return  mTextureInfos;
+    }
+
+
+    public function getTexturePivot(name:String):Point {
+        var info:TextureInfo = mTextureInfos[name];
+        if (info == null) return null;
+        else return info.pivot;
+    }
+
+    public function getTextureOriginLocation(name:String):Point {
+        var info:TextureInfo = mTextureInfos[name];
+        if (info == null) return null;
+        else return info.originLocation;
+    }
+
+    /** Retrieves a subtexture by name. Returns <code>null</code> if it is not found. */
+    override public function getTexture(name:String):Texture {
+        var info:TextureInfo = mTextureInfos[name];
+
+        if (info == null) return null;
+        else return Texture.fromTexture(texture, info.region, info.frame, info.rotated);
+    }
+
+    // utility methods
+
+    private static function parseBool(value:String):Boolean {
+        return value.toLowerCase() == "true";
+    }
+
+}
+}
+
+
+
+
+
+
+
+

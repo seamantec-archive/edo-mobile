@@ -1,0 +1,118 @@
+/**
+ * Created with IntelliJ IDEA.
+ * User: pepusz
+ * Date: 2013.07.09.
+ * Time: 15:46
+ * To change this template use File | Settings | File Templates.
+ */
+package com.utils {
+//import com.inAppPurchase.CommonStore;
+
+import flash.events.TimerEvent;
+import flash.utils.Timer;
+
+public class Blinker {
+    private static var objects:Array = [];
+    private static var blinkTimer:Timer = new Timer(500);
+    private static var blinkStatus:Boolean = false;
+
+    private static var doubleObjects:Array = [];
+    private static var doubleBlinkTimer:Timer = new Timer(250);
+    private static var doubleBlinkStatus:Boolean = false;
+    //TODO KI COMMENTEZTEM FORDITAS MIATT
+   // blinkTimer.addEventListener(TimerEvent.TIMER, blinkTimer_timerHandler, false, 0, true);
+   // doubleBlinkTimer.addEventListener(TimerEvent.TIMER,  doubleBlinkTimer_timerHandler, false, 0, true);
+
+    public static function addObject(obj:*):void {
+        if (objects.length === 0) {
+            blinkTimer.start();
+        }
+        for (var i:int = 0; i < objects.length; i++) {
+            if (objects[i] == obj) {
+                return;
+            }
+        }
+
+        obj.visible = blinkStatus;
+        objects.push(obj);
+    }
+
+    public static function removeObject(obj:*):void {
+//        if(!CommonStore.instance.isInstrumentsEnabled) {
+//            return;
+//        }
+        for (var i:int = 0; i < objects.length; i++) {
+            if (objects[i] == obj) {
+                objects.splice(i, 1);
+                obj.visible = true;
+                break;
+            }
+
+        }
+        if (objects.length === 0) {
+            blinkTimer.stop();
+        }
+    }
+
+    public static function clear():void {
+        blinkTimer.stop();
+        for (var i:int = 0; i < objects.length; i++) {
+            objects[i].visible = true;
+        }
+        objects.length = 0;
+    }
+
+    public static function containsObject(obj:*):Boolean {
+        for (var i:int = 0; i < objects.length; i++) {
+            if (objects[i] == obj) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private static function blinkTimer_timerHandler(e:TimerEvent):void {
+        blinkStatus = !blinkStatus;
+        for (var i:int = 0; i < objects.length; i++) {
+            objects[i].visible = blinkStatus;
+        }
+    }
+
+    public static function addDoubleObject(obj:*):void {
+        if (doubleObjects.length === 0) {
+            doubleBlinkTimer.start();
+        }
+        for (var i:int = 0; i < doubleObjects.length; i++) {
+            if (doubleObjects[i] == obj) {
+                return;
+            }
+        }
+
+        obj.visible = doubleBlinkStatus;
+        doubleObjects.push(obj);
+    }
+
+    public static function removeDoubleObject(obj:*):void {
+        for (var i:int = 0; i < doubleObjects.length; i++) {
+            if (doubleObjects[i] == obj) {
+                doubleObjects.splice(i, 1);
+                obj.visible = true;
+                break;
+            }
+
+        }
+        if (doubleObjects.lenght === 0) {
+            doubleBlinkTimer.stop();
+        }
+    }
+
+
+    private static function doubleBlinkTimer_timerHandler(e:TimerEvent):void {
+        doubleBlinkStatus = !doubleBlinkStatus;
+        for (var i:int = 0; i < doubleObjects.length; i++) {
+            doubleObjects[i].visible = doubleBlinkStatus;
+        }
+    }
+}
+}

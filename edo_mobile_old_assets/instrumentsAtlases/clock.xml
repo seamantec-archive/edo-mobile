@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="clock.png">
+  <SubTexture name="instance2" x="0" y="0" width="2" height="1" pivotX="-49" pivotY="-26.75" originX="0" originY="0" originWidth="2" originHeight="1.75" visible="true" color="0"/>
+  <SubTexture name="analog" x="-1" y="-1" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="true" color="0">
+    <SubTexture name="instance3" x="2" y="0" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="true" color="0"/>
+    <SubTexture name="mutato_ora" x="402" y="0" width="34" height="174" pivotX="16.775" pivotY="136.275" originX="200" originY="200" originWidth="27.575" originHeight="122.025" visible="false" color="0">
+      <SubTexture name="instance4" x="402" y="174" width="34" height="174" pivotX="16.775" pivotY="136.275" originX="16.775" originY="136.275" originWidth="34.45" originHeight="174.325" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="mutato_perc" x="402" y="348" width="34" height="174" pivotX="16.775" pivotY="136.275" originX="200" originY="200" originWidth="13.775" originHeight="174.325" visible="false" color="0">
+      <SubTexture name="instance5" x="0" y="400" width="34" height="174" pivotX="16.775" pivotY="136.275" originX="16.775" originY="136.275" originWidth="34.45" originHeight="174.325" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance6" x="34" y="400" width="44" height="93" pivotX="21.2" pivotY="18.225" originX="200" originY="200" originWidth="44.225" originHeight="93.525" visible="true" color="0"/>
+    <TextField name="label" font="Amble Bold" x="144.975" y="276.925" width="110.475" height="19.725" pivotX="1" pivotY="1" size="17.515800000000002" bold="false" italic="false" color="0" defaultText="Local"/>
+    <SubTexture name="instance7" x="78" y="400" width="147" height="145" pivotX="-18.725" pivotY="166.35" originX="200" originY="200" originWidth="147.225" originHeight="145.225" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="digital" x="-1" y="-1" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="false" color="0">
+    <SubTexture name="instance8" x="225" y="522" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="true" color="0">
+      <SubTexture name="instance9" x="436" y="0" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance10" x="34" y="545" width="127" height="284" pivotX="69" pivotY="124.5" originX="200" originY="200" originWidth="127.25" originHeight="284.25" visible="true" color="0"/>
+    <SubTexture name="digi1_a" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="78.125" originY="101.625" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance11" x="225" y="400" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi1_b" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="195.925" originY="101.625" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance12" x="312" y="400" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi1_c" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="313.75" originY="101.625" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance13" x="436" y="400" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi3_a" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="78.125" originY="351.625" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance14" x="523" y="400" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi3_b" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="195.925" originY="351.625" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance15" x="610" y="400" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi3_c" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="313.75" originY="351.625" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance16" x="0" y="829" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi2_a" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="78.125" originY="226.125" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance17" x="87" y="829" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi2_b" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="195.925" originY="226.125" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance18" x="0" y="903" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="digi2_c" x="-1" y="-1" width="105" height="95" pivotX="52.675" pivotY="52.675" originX="313.75" originY="226.125" originWidth="84.3" originHeight="76.725" visible="true" color="0">
+      <SubTexture name="instance19" x="87" y="903" width="87" height="74" pivotX="46.1" pivotY="47.625" originX="52.675" originY="52.675" originWidth="87.95" originHeight="74.25" visible="true" color="0"/>
+      <TextField name="a" font="DigitalEDOpr" x="0" y="0" width="105.375" height="95.925" pivotX="1" pivotY="1" size="85.1814" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <TextField name="instance20" font="Amble Bold" x="16.625" y="14.525000000000006" width="318.25" height="31.525" pivotX="1" pivotY="1" size="27.9942" bold="false" italic="false" color="16777215" defaultText="UTC"/>
+    <TextField name="instance21" font="Amble Bold" x="16.625" y="264.525" width="318.25" height="31.525" pivotX="1" pivotY="1" size="27.9942" bold="false" italic="false" color="16777215" defaultText="Solar Time"/>
+    <TextField name="label2" font="Amble Bold" x="16.625" y="139.525" width="318.25" height="31.525" pivotX="1" pivotY="1" size="27.9942" bold="false" italic="false" color="16777215" defaultText="Local Time"/>
+  </SubTexture>
+</TextureAtlas>

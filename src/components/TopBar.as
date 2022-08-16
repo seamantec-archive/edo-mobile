@@ -1,0 +1,63 @@
+/**
+ * Created by pepusz on 2014.09.03..
+ */
+package components {
+import com.common.AppProperties;
+import com.ui.MenuBtn;
+import com.utils.FontFactory;
+
+import starling.display.Quad;
+import starling.display.Sprite;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+import starling.text.TextField;
+
+public class TopBar extends Sprite {
+    public static const HEIGHT:uint = 30;
+    private var _menuBtn:MenuBtn = new MenuBtn();
+    private var title:TextField;
+
+    public function TopBar() {
+        super();
+        drawBg();
+        createTitle();
+        _menuBtn.addEventListener(TouchEvent.TOUCH, menuBtn_touchHandler);
+        this.addChild(_menuBtn);
+//        this.flatten();
+
+    }
+
+    private function createTitle():void {
+        title = FontFactory.getWhiteCenterFont(AppProperties.screenWidth, HEIGHT);
+        title.text = "";
+        this.addChild(title);
+    }
+
+    public function setTitle(titleString:String):void {
+        this.unflatten();
+        title.text = titleString;
+//        this.flatten();
+    }
+
+    private function drawBg():void {
+        var bg:Quad = new Quad(AppProperties.screenWidth - _menuBtn.width, TopBar.HEIGHT, 0x7b7b7b);
+        bg.x = _menuBtn.width - 1;
+        this.addChild(bg);
+    }
+
+    private function menuBtn_touchHandler(event:TouchEvent):void {
+        var touch:Touch = event.getTouch(stage);
+        if (touch) {
+            if (touch.phase == TouchPhase.ENDED) {
+                EdoMobile.menu.openClose();
+            }
+        }
+    }
+
+
+    public function get menuBtn():MenuBtn {
+        return _menuBtn;
+    }
+}
+}

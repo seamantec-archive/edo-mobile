@@ -1,0 +1,36 @@
+<stage>
+    <width>320</width>
+    <height>480</height>
+    <instrument>
+        <uid>stage2_1</uid>
+        <x>0</x>
+        <y>0</y>
+        <w>320</w>
+        <h>320</h>
+        <type>components.instruments.WaypointHU</type>
+    </instrument>
+    <instrument>
+        <uid>stage2_2</uid>
+        <x>0</x>
+        <y>320</y>
+        <w>160</w>
+        <h>160</h>
+        <type>components.instruments.SpeedVessel</type>
+    </instrument>
+    <instrument>
+        <uid>stage2_3</uid>
+        <x>160</x>
+        <y>320</y>
+        <w>160</w>
+        <h>80</h>
+        <type>components.instruments.digital.DigitalA</type>
+    </instrument>
+    <instrument>
+        <uid>stage2_4</uid>
+        <x>160</x>
+        <y>400</y>
+        <w>160</w>
+        <h>80</h>
+        <type>components.instruments.digital.DigitalA</type>
+    </instrument>
+</stage>

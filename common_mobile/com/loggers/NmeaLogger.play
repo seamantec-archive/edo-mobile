@@ -1,0 +1,94 @@
+package com.loggers
+{
+
+import flash.filesystem.File;
+import flash.filesystem.FileMode;
+import flash.filesystem.FileStream;
+import flash.utils.ByteArray;
+import flash.utils.getTimer;
+import nochump.util.zip.*;
+
+public class NmeaLogger {
+
+	private static var _instance:NmeaLogger;
+	private var _file:File;
+
+	public function NmeaLogger() {
+//			if(_instance != null){
+//
+//			}else{
+//				_instance = this;
+////				var formatter:DateTimeFormatter = new DateTimeFormatter(flash.globalization.LocaleID.DEFAULT, DateTimeStyle.CUSTOM);
+////                formatter.dateTimePattern("yyyy dd hmmss")
+//				var now:Date = new Date();
+//
+//				file = File.documentsDirectory;
+//				file = file.resolvePath("Edo instruments/")
+//                if(!file.exists){
+//                    file.createDirectory();
+//                }
+//				file = file.resolvePath("nmea/");
+//                if(!file.exists){
+//                    file.createDirectory();
+//                }
+//				file = file.resolvePath("edo_nmea_"+now.time+".nmea");
+//			}
+        _file = File.applicationStorageDirectory.resolvePath("configs/log.nmea");
+	}
+
+    public static function get instance():NmeaLogger{
+        if(_instance == null){
+            _instance = new NmeaLogger();
+        }
+        return _instance;
+    }
+
+	public function getNativePath():String{
+		return _file.nativePath;
+	}
+		
+	public function getLogFile():File{
+		if(!_file.exists){
+			writeLog("");
+		}
+		return _file;
+	}
+
+	public function writeLog(message:String):void{
+//	    var fs:FileStream = new FileStream();
+//        fs.open(_file, FileMode.APPEND);
+//        fs.writeUTFBytes(message);
+//        fs.close();
+
+//        if(_file.size>=2048 && !File.applicationStorageDirectory.resolvePath("configs/log.zip").exists) {
+//            var t:int = getTimer();
+//            var data:String = message;
+//            while(data.length<20971520) {
+//                data += message;
+//            }
+//            trace("genarate file: ", getTimer() - t);
+//
+//            t = getTimer();
+//            var array:ByteArray = new ByteArray();
+//            array.writeUTFBytes(data);
+//            trace("genarate byte array: ", getTimer() - t);
+//
+//            t = getTimer();
+//            var zipFile:ZipOutput = new ZipOutput();
+//            var zipEntry:ZipEntry = new ZipEntry("log.nmea");
+//            zipFile.putNextEntry(zipEntry);
+//            zipFile.write(array);
+//            zipFile.closeEntry();
+//            zipFile.finish();
+//            trace("genarate zip: ", getTimer() - t);
+//
+//            fs = new FileStream();
+//            fs.open(File.applicationStorageDirectory.resolvePath("configs/log.zip"),FileMode.WRITE);
+//            fs.writeBytes(zipFile.byteArray);
+//            fs.close();
+//
+//            trace(File.applicationStorageDirectory.resolvePath("configs/log.zip").size);
+//        }
+	}
+}
+}

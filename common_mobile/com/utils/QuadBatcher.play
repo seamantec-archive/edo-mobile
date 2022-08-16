@@ -1,0 +1,130 @@
+/**
+ * Created by pepusz on 2014.09.05..
+ */
+package com.utils {
+import com.store.RenderTextureContainer;
+
+import flash.geom.Point;
+
+import starling.display.DisplayObject;
+import starling.display.Image;
+import starling.display.Quad;
+import starling.display.QuadBatch;
+import starling.display.Sprite;
+import starling.events.EventDispatcher;
+import starling.textures.RenderTexture;
+
+public class QuadBatcher extends EventDispatcher {
+    protected var _quadBatch:QuadBatch;
+    protected var _renderTexture:RenderTexture;
+    protected var _container:Vector.<DisplayObject> = new <DisplayObject>[];
+    protected var _img:Image;
+    protected var _sprite:Sprite;
+
+    public function QuadBatcher(w:uint, h:uint, name:String) {
+        if (!isPowerOfTwo(w) || !isPowerOfTwo(h)) {
+//            throw new Error("Width or Height not power of two in quadBatcher w:" + w + " h:" + h);
+        }
+        _sprite = new Sprite();
+        _quadBatch = new QuadBatch();
+        if (name == "") {
+            name = RenderTextureContainer.counter.toString();//Math.round(Math.random() * 10000).toString()
+        }
+        _renderTexture = RenderTextureContainer.getRenderTexture(name, w, h);
+        if (_renderTexture == null) {
+            throw new Error("render texture can't be null");
+        }
+    }
+
+    public function contains(obj:DisplayObject):Boolean {
+        for (var i:int = 0; i < _container.length; i++) {
+            if (_container[i] == obj) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function clearTexture():void {
+        _renderTexture.clear();
+    }
+
+    public function reset():void {
+        clearTexture();
+        _quadBatch.reset();
+        _container.length = 0;
+        _sprite.removeChildren(0, _sprite.numChildren - 1);
+    }
+
+    public function addDisplayObject(obj:DisplayObject, withRender:Boolean = true):void {
+        _container.push(obj);
+        _sprite.addChild(obj);
+        if(withRender) {
+            render();
+        }
+    }
+
+    public function addDebugObject(point:Point):void {
+        var debug:Quad = new Quad(4, 4, 0x0000ff);
+        debug.name = "debug";
+        debug.x = point.x - 2;
+        debug.y = point.y - 2;
+
+        for (var i:int = (_container.length - 1); i >= 0; i--) {
+            if (_container[i].name == "debug") {
+                _container[i] = debug;
+                _sprite.removeChildAt(i, true);
+                _sprite.addChildAt(debug, i);
+                render();
+                return;
+            }
+        }
+
+        addDisplayObject(debug);
+    }
+
+    public function render():void {
+        clearTexture();
+        _quadBatch.reset();
+
+        _renderTexture.draw(_sprite);
+        if (_img == null) {
+            _img = new Image(_renderTexture);
+        } else {
+            _img.texture = _renderTexture;
+        }
+        _quadBatch.addImage(_img);
+    }
+
+
+    public function dispose():void {
+        _renderTexture.dispose();
+        _quadBatch.dispose();
+        _container.length = 0;
+        _sprite.removeChildren(0, _sprite.numChildren - 1);
+    }
+
+    public function get quadBatch():QuadBatch {
+        return _quadBatch;
+    }
+
+
+    public function get sprite():Sprite {
+        return _sprite;
+    }
+
+    private function isPowerOfTwo(x:uint):Boolean {
+        return (
+        x == 1 || x == 2 || x == 4 || x == 8 || x == 16 || x == 32 ||
+        x == 64 || x == 128 || x == 256 || x == 512 || x == 1024 ||
+        x == 2048 || x == 4096 || x == 8192 || x == 16384 ||
+        x == 32768 || x == 65536 || x == 131072 || x == 262144 ||
+        x == 524288 || x == 1048576 || x == 2097152 ||
+        x == 4194304 || x == 8388608 || x == 16777216 ||
+        x == 33554432 || x == 67108864 || x == 134217728 ||
+        x == 268435456 || x == 536870912 || x == 1073741824 ||
+        x == 2147483648);
+    }
+}
+}

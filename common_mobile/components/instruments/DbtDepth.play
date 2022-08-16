@@ -1,0 +1,431 @@
+/**
+ * Created by seamantec on 04/11/14.
+ */
+package components.instruments {
+
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.sailing.ForgatHandler;
+import com.sailing.SailData;
+import com.sailing.Splitter;
+import com.sailing.datas.WaterDepth;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.minMax.MinMax;
+import com.sailing.units.Depth;
+import com.sailing.units.UnitHandler;
+import com.utils.Assets;
+import com.utils.Blinker;
+import com.utils.SaveHandler;
+
+import starling.events.TouchEvent;
+import starling.textures.Texture;
+import starling.utils.Color;
+
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+import starling.utils.deg2rad;
+
+public class DbtDepth extends BaseInstrument {
+
+    private var _lastDepth:WaterDepth;
+
+    public var actualState:String = "";
+
+    private var forgatHandler:ForgatHandler;
+    private var xx:Number = 9;
+
+    private var analogBackground:DynamicSprite;
+    private var analogBackgroundBatch:InstrumentQuadBatcher;
+    private var analog:DynamicSprite;
+    private var center:DynamicSprite;
+    private var centerBatch:InstrumentQuadBatcher;
+    private var analogi:DynamicSprite;
+    private var digitalBackgroundBatch:InstrumentQuadBatcher;
+    private var digitalBackground:DynamicSprite;
+    private var digital:DynamicSprite;
+    private var rajz:DynamicSprite;
+
+    public function DbtDepth() {
+        super(Assets.getInstrument("depth"));
+
+        minMaxVars["waterdepth.waterDepthWithOffset"] = new MinMax(undefined, undefined, this);
+        forgatHandler = new ForgatHandler(analog["mutato"], this, { offsetToZero: 22.5, min: 202.5, max: 157.5 });
+
+        setAnalog();
+        this.addEventListener(TouchEvent.TOUCH, digitalis);
+
+        setInvalid();
+        uchange();
+    }
+
+    protected override function buildComponents():void {
+        var basic:Texture = Assets.getAtlas("basic_common");
+        var depth:Texture = Assets.getAtlas("depth");
+
+        analogBackground = _instrumentAtlas.getComponentAsDynamicSprite(Assets.getAtlas("speed_common"), "analog.instance2");
+
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "analog.szlap_m", analogBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "analog.szlap_feet", analogBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "analog.szlap_fathom", analogBackground);
+
+        analog = new DynamicSprite();
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.label", analog);
+        analog["label"].width = analog.width - ((analog["label"].x - 10)*2);
+
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.mutato", analog);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.min", analog);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.max", analog);
+
+        center = new DynamicSprite();
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance11", center);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance9", center);
+
+        analogi = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "analog.digi", analogi, center, VAlign.CENTER,HAlign.RIGHT, 0.9);
+        analogi["digi"]["digi_a"].y -= 3;
+
+        analogBackgroundBatch = new InstrumentQuadBatcher(analogBackground.width,analogBackground.height, "waterDepthAnalogBackground");
+        analogBackgroundBatch.addDisplayObject(analogBackground);
+        this.addChild(analogBackgroundBatch.quadBatch);
+
+        this.addChild(analog);
+
+        centerBatch = new InstrumentQuadBatcher(analogBackground.width,analogBackground.height);
+        centerBatch.addDisplayObject(center);
+        this.addChild(centerBatch.quadBatch);
+
+        this.addChild(analogi);
+
+        digitalBackground = _instrumentAtlas.getComponentAsDynamicSprite(depth, "digital.instance12");
+
+        digital = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi1", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimin1", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1, 0xffeea3);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimax1", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1, 0xffeea3);
+
+        rajz = _instrumentAtlas.getComponentAsDynamicSprite(depth, "digital.rajz", false, false);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "digital.rajz.instance13", rajz);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "digital.rajz.instance17", rajz);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "digital.rajz.nyil_dbt", rajz);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "digital.rajz.nyil_dbk", rajz);
+        _instrumentAtlas.getComponentAsImageWithParent(depth, "digital.rajz.nyil_dbs", rajz);
+        digital.addChild(rajz);
+
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.offset", digital, null, VAlign.CENTER,HAlign.RIGHT, 0.92, 0x000000);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.offset_unit", digital, VAlign.CENTER,HAlign.RIGHT, 1.75);
+        digital["offset_unit"].x -= digital["offset_unit"].width;
+        digital["offset_unit"].width *= 2.05;
+        digital["offset_unit"].height *= 2.05;
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.unit", digitalBackground, VAlign.BOTTOM,HAlign.RIGHT, 2);
+        digitalBackground["unit"].x -= digitalBackground["unit"].width*1.2;
+        digitalBackground["unit"].width *= 2.05;
+        digitalBackground["unit"].height *= 2.05;
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.label", digital, VAlign.TOP,HAlign.LEFT, 0.95);
+        digital["label"].width = digital.width - (digital["label"].x*2);
+
+        digitalBackgroundBatch = new InstrumentQuadBatcher(digitalBackground.width,digitalBackground.width, "waterDepthDigitalBackground");
+        digitalBackgroundBatch.addDisplayObject(digitalBackground);
+        this.addChild(digitalBackgroundBatch.quadBatch);
+
+        this.addChild(digital);
+    }
+
+    private function setAnalog():void {
+        analogBackgroundBatch.quadBatch.visible = true;
+        analog.visible = true;
+        centerBatch.quadBatch.visible = true;
+        analogi.visible = true;
+
+        digitalBackgroundBatch.quadBatch.visible = false;
+        digital.visible = false;
+    }
+
+    private function setDigital():void {
+        analogBackgroundBatch.quadBatch.visible = false;
+        analog.visible = false;
+        centerBatch.quadBatch.visible = false;
+        analogi.visible = false;
+
+        digitalBackgroundBatch.quadBatch.visible = true;
+        digital.visible = true;
+    }
+
+    private function digitalis(e:TouchEvent):void {
+        if (touchIsEnd(e)) {
+            if (analog.visible) {
+                setDigital();
+                actualState = "digital";
+            } else {
+                setAnalog();
+                actualState = "analog";
+            }
+
+            SaveHandler.instance.setState(_id, actualState);
+        }
+    }
+
+    private function setState(value:String):void {
+        actualState = value;
+        if (value == "digital") {
+            setDigital();
+        } else if (value == "analog") {
+            setAnalog();
+        }
+    }
+
+    public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        var value:Number;
+
+        if (datas!=null && datas.waterdepth.isValid()) {
+            removeBlinker();
+
+            _lastDepth = datas.waterdepth;
+
+            analog["mutato"].visible = true;
+
+            if(!isNaN((minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).min)) {
+                analog["min"].visible = true;
+            }
+            if(!isNaN((minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).max)) {
+                analog["max"].visible = true;
+            }
+
+            value = datas.waterdepth.waterDepthWithOffset.value;
+
+            changeLabel(datas.waterdepth.offset.value);
+
+            showValue(value);
+            rotateValue(value, { needTween: needTween });
+        }
+    }
+
+    public override function updateState(stateType:String):void {
+        setState(stateType);
+    }
+
+    public override function dataInvalidated(key:String):void {
+        if (key === "waterdepth") {
+            removeBlinker();
+            analog["mutato"].alpha = 1.0;
+            (minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).reset((minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).unitClass);
+            setInvalid();
+        }
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if (key === "waterdepth") {
+            analog["mutato"].alpha = 1.0;
+
+            Blinker.addObject(analog["mutato"]);
+            Blinker.addObject(analogi["digi"]["digi_a"]);
+            Blinker.addObject(analogi["digi"]["digi_b"]);
+            Blinker.addObject(digital["digi1"]["digi_a"]);
+            Blinker.addObject(digital["digi1"]["digi_b"]);
+
+            Blinker.addObject(digital["offset"]["digi_a"]);
+            Blinker.addObject(digital["offset"]["digi_b"]);
+        }
+    }
+
+    public override function unitChanged():void {
+        uchange();
+    }
+
+    public override function minMaxChanged():void {
+        showMinMax();
+        rotateMinMax();
+    }
+
+    private function changeLabel(offset:Number):void {
+        rajz["nyil_dbk"].visible = false;
+        rajz["nyil_dbs"].visible = false;
+
+        if (offset == 0) {
+            analog["label"].text = "Depth Below Transducer";
+            digital["label"].text = "Depth Below Transducer";
+//            digital["label"].autoScale = true
+        } else if (offset < 0) {
+            analog["label"].text = "Depth Below Keel";
+            digital["label"].text = "Depth Below Keel";
+            rajz["nyil_dbk"].visible = true;
+        } else {
+            analog["label"].text = "Depth Below Surface";
+            digital["label"].text = "Depth Below Surface";
+            rajz["nyil_dbs"].visible = true;
+        }
+
+        digital["offset"]["digi_a"].text = Splitter.withValue(offset).a2;
+        digital["offset"]["digi_b"].text = Splitter.instance.b1;
+    }
+
+    private function showValue(value:Number):void {
+        analogi["digi"]["digi_a"].text = Splitter.withValue(value).a3;
+        analogi["digi"]["digi_b"].text = Splitter.instance.b1;
+
+        digital["digi1"]["digi_a"].text = Splitter.withValue(value).a3;
+        digital["digi1"]["digi_b"].text = Splitter.instance.b1;
+    }
+
+    private function showMinMax():void {
+        var min:Number = (minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).min;
+        if(!isNaN(min)) {
+            digital["digimin1"]["digi_a"].text = Splitter.withValue(min).a3;
+            digital["digimin1"]["digi_b"].text = Splitter.instance.b1;
+        } else {
+            digital["digimin1"]["digi_a"].text = "---";
+            digital["digimin1"]["digi_b"].text = "-";
+        }
+
+        var max:Number = (minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).max;
+        if(!isNaN(max)) {
+            digital["digimax1"]["digi_a"].text = Splitter.withValue(max).a3;
+            digital["digimax1"]["digi_b"].text = Splitter.instance.b1;
+        } else {
+            digital["digimax1"]["digi_a"].text = "---";
+            digital["digimax1"]["digi_b"].text = "-";
+        }
+    }
+
+    private function rotateValue(value:Number, needTween:Boolean):void {
+        if(UnitHandler.instance.depth==Depth.FATHOM) {
+            if(value>=0.5) {
+                forgatHandler.forgat(-29.15 + (Math.pow((value*15.1), 1 / 3)) * 270 / xx, needTween);
+            } else {
+                forgatHandler.forgat(value*2*45, needTween);
+            }
+        } else {
+            if(value>=1) {
+                forgatHandler.forgat(-29.15 + (Math.pow((value*15.1), 1 / 3)) * 270 / xx, needTween);
+            } else {
+                forgatHandler.forgat(value*45, needTween);
+            }
+        }
+    }
+
+    private function rotateMinMax():void {
+        var min:Number = (minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).min;
+        var max:Number = (minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).max;
+        if(isNaN(min) && isNaN(max)) {
+            analog["min"].visible = false;
+            analog["max"].visible = false;
+            return;
+        }
+
+        if(UnitHandler.instance.depth==Depth.FATHOM) {
+            if(min>=0.5) {
+                min = -186.65 + (Math.pow((min*15.1), 1 / 3)) * 270 / xx;
+            } else {
+                min = -157.5 + (min*2*45);
+            }
+            if(max>=0.5) {
+                max = -186.65 + (Math.pow((max*15.1), 1 / 3)) * 270 / xx;
+            } else {
+                max = -157.5 + (max*2*45);
+            }
+        } else {
+            if(min>=1) {
+                min = -186.65 + (Math.pow((min*15.1), 1 / 3)) * 270 / xx;
+            } else {
+                min = -157.5 + (min*45);
+            }
+            if(max>=1) {
+                max = -186.65 + (Math.pow((max*15.1), 1 / 3)) * 270 / xx;
+            } else {
+                max = -157.5 + (max*45);
+            }
+        }
+
+        if (min < (forgatHandler.min-360)) {
+            analog["min"].rotation = deg2rad(forgatHandler.min - 360);
+        } else if (min > forgatHandler.max) {
+            analog["min"].rotation = deg2rad(forgatHandler.max);
+        } else {
+            analog["min"].rotation = deg2rad(min);
+        }
+        if (max < (forgatHandler.min-360)) {
+            analog["max"].rotation = deg2rad(forgatHandler.min - 360);
+        } else if (max > forgatHandler.max) {
+            analog["max"].rotation = deg2rad(forgatHandler.max);
+        } else {
+            analog["max"].rotation = deg2rad(max);
+        }
+    }
+
+    private function removeBlinker():void {
+        Blinker.removeObject(analog["mutato"]);
+        Blinker.removeObject(analogi["digi"]["digi_a"]);
+        Blinker.removeObject(analogi["digi"]["digi_b"]);
+        Blinker.removeObject(digital["digi1"]["digi_a"]);
+        Blinker.removeObject(digital["digi1"]["digi_b"]);
+        Blinker.removeObject(digital["offset"]["digi_a"]);
+        Blinker.removeObject(digital["offset"]["digi_b"]);
+    }
+
+    private function setInvalid():void {
+        _lastDepth = null;
+
+        analog["mutato"].visible = false;
+        rajz["nyil_dbk"].visible = false;
+        rajz["nyil_dbt"].visible = false;
+        rajz["nyil_dbs"].visible = false;
+
+        if(!(minMaxVars["waterdepth.waterDepthWithOffset"] as MinMax).reseted) {
+            analog["min"].visible = true;
+            analog["max"].visible = true;
+        } else {
+            analog["min"].visible = false;
+            analog["max"].visible = false;
+
+            digital["digimin1"]["digi_a"].text = "---";
+            digital["digimin1"]["digi_b"].text = "-";
+            digital["digimax1"]["digi_a"].text = "---";
+            digital["digimax1"]["digi_b"].text = "-";
+        }
+
+        analogi["digi"]["digi_a"].text = "---";
+        analogi["digi"]["digi_b"].text = "-";
+        digital["digi1"]["digi_a"].text = "---";
+        digital["digi1"]["digi_b"].text = "-";
+
+        digital["offset"]["digi_a"].text = "--";
+        digital["offset"]["digi_b"].text = "--";
+    }
+
+    private function uchange():void {
+        analogBackground["szlap_m"].visible = false;
+        analogBackground["szlap_feet"].visible = false;
+        analogBackground["szlap_fathom"].visible = false;
+
+        if(_lastDepth!=null) {
+            showValue(_lastDepth.waterDepthWithOffset.value);
+            digital["offset"]["digi_a"].text = Splitter.withValue(_lastDepth.offset.value).a2;
+            digital["offset"]["digi_b"].text = Splitter.instance.b1;
+        }
+
+        digitalBackground["unit"].text = (new Depth()).getUnitShortString();
+        digital["offset_unit"].text = (new Depth()).getUnitShortString();
+
+        switch (UnitHandler.instance.depth) {
+            case Depth.METER:
+                analogBackground["szlap_m"].visible = true;
+                xx = 9;
+                break;
+            case Depth.FEET:
+                analogBackground["szlap_feet"].visible = true;
+                xx = 13;
+                break;
+            case Depth.FATHOM:
+                analogBackground["szlap_fathom"].visible = true;
+                xx = 7.25;
+                break;
+            default:
+                analogBackground["szlap_m"].visible = true;
+                xx = 9;
+                break;
+        }
+
+        analogBackgroundBatch.render();
+        digitalBackgroundBatch.render();
+    }
+}
+}

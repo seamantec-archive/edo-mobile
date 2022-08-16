@@ -1,0 +1,529 @@
+/**
+ * Created by seamantec on 10/11/14.
+ */
+package components.instruments {
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.sailing.ForgatHandler;
+import com.sailing.SailData;
+import com.sailing.Splitter;
+import com.sailing.datas.Bwc;
+import com.sailing.datas.CrossTrack;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.units.Unit;
+import com.utils.Assets;
+import com.utils.Blinker;
+import com.utils.SaveHandler;
+
+import starling.events.TouchEvent;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+public class WaypointCU extends BaseInstrument {
+
+    private const XTE_WIDTH_IN_NM:Number = 0.161987; // 300m in NM
+    private var XTE_WIDTH_IN_PIXEL:int;
+
+    private var _lastBwc:Bwc;
+    private var _lastCT:CrossTrack;
+
+    private var _isHeadingValid:Boolean = false;
+    private var _isBearingValid:Boolean = false;
+    private var _isCTValid:Boolean = false;
+
+    public var actualState:String = "";
+
+    private var _cogHandler:ForgatHandler;
+    private var _headingHandler:ForgatHandler;
+    private var _bearingHandler:ForgatHandler;
+
+    private var _isHeading:Boolean;
+    private var _isPAS:Boolean;
+    private var _isBwc:Boolean;
+    private var _isCT:Boolean;
+    private var _isEta:Boolean;
+
+    private var analog:DynamicSprite;
+    private var waypoint_bearing:DynamicSprite;
+    private var digitalBackgroundBatch:InstrumentQuadBatcher;
+    private var digitalBackground:DynamicSprite;
+    private var digital:DynamicSprite;
+
+    public function WaypointCU() {
+        super(Assets.getInstrument("waypoint_cu"));
+
+        _cogHandler = new ForgatHandler(analog["compass_cog"], this);
+        _headingHandler = new ForgatHandler(analog["heading"], this);
+        _bearingHandler = new ForgatHandler(waypoint_bearing, this);
+
+        setAnalog();
+        this.addEventListener(TouchEvent.TOUCH, digitalis);
+
+        uchange();
+        setPASInvalid();
+        setBwcInvalid();
+        setEtaInvalid();
+        setCTInvalid();
+    }
+
+    protected override function buildComponents():void {
+        var basic:Texture = Assets.getAtlas("basic_common");
+        var waypoint:Texture = Assets.getAtlas("waypoint_common");
+
+        analog = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "analog.instance2");
+
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.heading", analog);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.compass_cog", analog);
+
+        waypoint_bearing = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "analog.waypoint_bearing", false, true);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.waypoint_bearing.crosstrack_error", waypoint_bearing);
+        analog.addChild(waypoint_bearing);
+
+        XTE_WIDTH_IN_PIXEL = waypoint_bearing["crosstrack_error"].x;
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.wpname", analog);
+
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.steer_left", analog, true);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.steer_right", analog, true);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance11", analog, true);
+
+        this.addChild(analog);
+
+        digitalBackground = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "digital.instance13");
+
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "digital.instance18", digitalBackground);
+
+        digital = new DynamicSprite();
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.wpname", digital);
+
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.distanceto", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.bearing", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.day", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.06);
+        digital["day"]["digi_a"].y += 1;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.hour", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.06);
+        digital["hour"]["digi_a"].y += 1;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.minute", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.06);
+        digital["minute"]["digi_a"].y += 1;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.rbearing", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.xte_a", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.02);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.xte_b", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.02);
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.distance_unit", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.time_a", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.time_b", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.time_c", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.side", digital);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.ct_unit", digitalBackground);
+
+        digitalBackgroundBatch = new InstrumentQuadBatcher(digitalBackground.width,digitalBackground.height, "waypointDigitalBackground");
+        digitalBackgroundBatch.addDisplayObject(digitalBackground);
+        this.addChild(digitalBackgroundBatch.quadBatch);
+
+        this.addChild(digital);
+    }
+
+    private function setAnalog():void {
+        analog.visible = true;
+
+        digitalBackgroundBatch.quadBatch.visible = false;
+        digital.visible = false;
+    }
+
+    private function setDigital():void {
+        analog.visible = false;
+
+        digitalBackgroundBatch.quadBatch.visible = true;
+        digital.visible = true;
+    }
+
+    private function digitalis(e:TouchEvent):void {
+        if (touchIsEnd(e)) {
+            if (analog.visible) {
+                setDigital();
+                actualState = "digital";
+            } else {
+                setAnalog();
+                actualState = "analog";
+            }
+
+            SaveHandler.instance.setState(_id, actualState);
+        }
+    }
+
+    private function setState(value:String):void {
+        actualState = value;
+        if (value == "digital") {
+            setDigital();
+        } else if (value == "analog") {
+            setAnalog();
+        }
+    }
+
+    public override function updateState(stateType:String):void {
+        setState(stateType);
+    }
+
+    public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        _isHeading = datas!=null && datas.heading.isValid();
+        _isPAS = datas!=null && datas.positionandspeed.isValid();
+        _isBwc = datas!=null && datas.bwc.isValid();
+        _isCT = datas!=null && datas.crosstrack.isValid();
+        _isEta = datas!=null && datas.eta.isValid();
+
+        if(_isPAS) {
+            Blinker.removeObject(analog["compass_cog"]);
+            analog["compass_cog"].visible = true;
+
+            _cogHandler.forgat(0 - datas.positionandspeed.cog.value, { needTween: needTween });
+
+            if(_isHeading) {
+                Blinker.removeObject(analog["heading"]);
+                analog["heading"].visible = true;
+                _isHeadingValid = true;
+
+                _headingHandler.forgat((0 - datas.positionandspeed.cog.value) + datas.heading.heading.value, { needTween: needTween });
+            }
+
+            if(_isBwc) {
+                Blinker.removeObject(waypoint_bearing);
+                waypoint_bearing.visible = true;
+                _isBearingValid = true;
+
+                _bearingHandler.forgat((0 - datas.positionandspeed.cog.value) + datas.bwc.waypointBearing.value, { needTween: needTween });
+            }
+
+            if(_isCT) {
+                if(datas.crosstrack.crossTrackError.getPureData()==Unit.INVALID_VALUE || datas.crosstrack.directionToSteer=="") {
+                    Blinker.removeObject(waypoint_bearing["crosstrack_error"]);
+                    waypoint_bearing["crosstrack_error"].visible = false;
+                    _isCTValid = false;
+                } else {
+                    var cte:Number = Math.abs(datas.crosstrack.crossTrackError.getPureData());
+                    if(datas.crosstrack.directionToSteer=="R") {
+                        cte *= -1;
+                    }
+                    waypoint_bearing["crosstrack_error"].x = ((cte / XTE_WIDTH_IN_NM) * XTE_WIDTH_IN_PIXEL) + XTE_WIDTH_IN_PIXEL;
+                    if (waypoint_bearing["crosstrack_error"].x > (XTE_WIDTH_IN_PIXEL*2)) {
+                        waypoint_bearing["crosstrack_error"].x = XTE_WIDTH_IN_PIXEL*2;
+                        Blinker.addObject(waypoint_bearing["crosstrack_error"]);
+                        _isCTValid = false;
+                    } else if (waypoint_bearing["crosstrack_error"].x < 0) {
+                        waypoint_bearing["crosstrack_error"].x = 0;
+                        Blinker.addObject(waypoint_bearing["crosstrack_error"]);
+                        _isCTValid = false;
+                    } else {
+                        Blinker.removeObject(waypoint_bearing["crosstrack_error"]);
+                        waypoint_bearing["crosstrack_error"].visible = true;
+                        _isCTValid = true;
+                    }
+                }
+            }
+        }
+
+        if(_isBwc) {
+            removeBwcBlinker();
+            _lastBwc = datas.bwc;
+
+            analog["wpname"].text = datas.bwc.waypointId;
+            digital["wpname"].text = datas.bwc.waypointId;
+
+            digital["distanceto"]["digi_a"].text = Splitter.withValue(datas.bwc.waypointDistance.getDynamicValue()).a4;
+            digital["distanceto"]["digi_b"].text = Splitter.instance.b1;
+
+            digital["bearing"]["digi_a"].text = Splitter.withValue(datas.bwc.waypointBearing.value).a3;
+
+            if(digitalBackground["distance_unit"]!=datas.bwc.waypointDistance.getDynamicShortString()) {
+                digitalBackground["distance_unit"].text = datas.bwc.waypointDistance.getDynamicShortString();
+                digitalBackgroundBatch.render();
+            }
+        }
+
+        if(_isEta) {
+            removeEtaBlinker();
+
+            var eta:Number = datas.eta.eta;
+            var hour:Number = Math.floor(eta/3600);
+            if(hour>=24) {
+                if(digitalBackground["time_a"].text!="d" && digitalBackground["time_b"].text!="h" && digitalBackground["time_c"].text!="m") {
+                    digitalBackground["time_a"].text = "d";
+                    digitalBackground["time_b"].text = "h";
+                    digitalBackground["time_c"].text = "m";
+                    digitalBackgroundBatch.render();
+                }
+                var day:Number = Math.floor(hour/24);
+                digital["day"]["digi_a"].text = toTime(day);
+                eta -= (day*24*3600);
+                hour = Math.floor(eta/3600);
+                digital["hour"]["digi_a"].text = toTime(hour);
+                eta -= (hour*3600);
+                digital["minute"]["digi_a"].text = toTime(Math.floor(eta/60));
+            } else {
+                if(digitalBackground["time_a"].text!="h" && digitalBackground["time_b"].text!="m" && digitalBackground["time_c"].text!="s") {
+                    digitalBackground["time_a"].text = "h";
+                    digitalBackground["time_b"].text = "m";
+                    digitalBackground["time_c"].text = "s";
+                    digitalBackgroundBatch.render();
+                }
+                digital["day"]["digi_a"].text = toTime(hour);
+                eta -= (hour*3600);
+                var minute:Number = Math.floor(eta/60);
+                digital["hour"]["digi_a"].text = toTime(minute);
+                eta -= (minute*60);
+                digital["minute"]["digi_a"].text = toTime(Math.floor(eta));
+            }
+        }
+
+        if(_isHeading && _isBwc) {
+            removeRBearingBlinker();
+
+            var rbearing:Number = to180(to180(datas.bwc.waypointBearing.value) - to180(datas.heading.heading.value));
+//            if(rbearing>180) {
+//                rbearing = 360 - rbearing;
+//            } else if(rbearing<(-180)) {
+//                rbearing += 360;
+//            }
+
+            rbearing = Math.round(rbearing);
+            digital["rbearing"]["digi_a"].text = Splitter.withValue(Math.abs(rbearing)).a3;
+
+            if(rbearing<=(-1)) {
+                digital["side"].text = "L";
+            } else if(rbearing>=1) {
+                digital["side"].text = "R";
+            } else {
+                digital["side"].text = "";
+            }
+        }
+
+        if(_isCT) {
+            removeCTBlinker();
+            _lastCT = datas.crosstrack;
+
+            if(datas.crosstrack.crossTrackError.getDynamicValue()!=Unit.INVALID_VALUE) {
+                digital["xte_a"]["digi_a"].text = Splitter.withValue(datas.crosstrack.crossTrackError.getDynamicValue()).a4;
+                digital["xte_b"]["digi_a"].text = Splitter.instance.b2;
+            } else {
+                digital["xte_a"]["digi_a"].text = "----";
+                digital["xte_b"]["digi_a"].text = "--";
+            }
+
+            if(digitalBackground["ct_unit"]!=datas.crosstrack.crossTrackError.getDynamicShortString()) {
+                digitalBackground["ct_unit"].text = datas.crosstrack.crossTrackError.getDynamicShortString();
+                digitalBackgroundBatch.render();
+            }
+
+            analog["steer_right"].visible = false;
+            analog["steer_left"].visible = false;
+            if(datas.crosstrack.directionToSteer=="R") {
+                analog["steer_right"].visible = true;
+            } else if(datas.crosstrack.directionToSteer=="L") {
+                analog["steer_left"].visible = true;
+            }
+        }
+    }
+
+    public override function dataInvalidated(key:String):void {
+        if(key == "positionandspeed") {
+            setPASInvalid();
+        }
+        if(key == "heading") {
+            Blinker.removeObject(analog["heading"]);
+            analog["heading"].visible = false;
+
+            removeRBearingBlinker();
+            digital["rbearing"]["digi_a"].text = "---";
+            digital["side"].text = "";
+        }
+        if(key == "bwc") {
+            removeBwcBlinker();
+            removeRBearingBlinker();
+            setBwcInvalid();
+        }
+        if(key == "eta") {
+            removeEtaBlinker();
+            setEtaInvalid();
+        }
+        if(key == "crosstrack") {
+            removeCTBlinker();
+            setCTInvalid();
+        }
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if(key == "positionandspeed") {
+            Blinker.addObject(analog["compass_cog"]);
+            if(_isHeadingValid) {
+                Blinker.addObject(analog["heading"]);
+                _isHeadingValid = false;
+            }
+            if(_isBearingValid) {
+                Blinker.addObject(waypoint_bearing);
+                _isBearingValid = false;
+            }
+        }
+        if(key == "heading") {
+            if(_isHeadingValid) {
+                Blinker.addObject(analog["heading"]);
+                _isHeadingValid = false;
+            }
+
+            if(digital["rbearing"]["digi_a"].text!="---") {
+                Blinker.addObject(digital["rbearing"]["digi_a"]);
+                Blinker.addObject(digital["side"]);
+            }
+        }
+        if(key == "bwc") {
+            if(_isBearingValid) {
+                Blinker.addObject(waypoint_bearing);
+                _isBearingValid = false;
+            }
+            Blinker.addObject(analog["wpname"]);
+            Blinker.addObject(digital["wpname"]);
+
+            Blinker.addObject(digital["distanceto"]["digi_a"]);
+            Blinker.addObject(digital["distanceto"]["digi_b"]);
+
+            Blinker.addObject(digital["bearing"]["digi_a"]);
+
+            if(digital["rbearing"]["digi_a"].text!="---") {
+                Blinker.addObject(digital["rbearing"]["digi_a"]);
+                Blinker.addObject(digital["side"]);
+            }
+        }
+        if(key == "eta") {
+            Blinker.addObject(digital["day"]["digi_a"]);
+            Blinker.addObject(digital["hour"]["digi_a"]);
+            Blinker.addObject(digital["minute"]["digi_a"]);
+        }
+        if(key == "crosstrack") {
+            Blinker.addObject(waypoint_bearing["crosstrack_error"]);
+            _isCTValid = true;
+
+            Blinker.addObject(digital["xte_a"]["digi_a"]);
+            Blinker.addObject(digital["xte_b"]["digi_a"]);
+        }
+    }
+
+    public override function unitChanged():void {
+        uchange();
+    }
+
+    public override function minMaxChanged():void {
+    }
+
+    private function setPASInvalid():void {
+        Blinker.removeObject(analog["compass_cog"]);
+        Blinker.removeObject(analog["heading"]);
+        Blinker.removeObject(waypoint_bearing);
+        analog["compass_cog"].visible = false;
+        analog["heading"].visible = false;
+        waypoint_bearing.visible = false;
+
+        digital["rbearing"]["digi_a"].text = "---";
+        digital["side"].text = "";
+    }
+
+    private function setBwcInvalid():void {
+        _lastBwc = null;
+
+        analog["wpname"].text = "NO WAYPOINT";
+        digital["wpname"].text = "NO WAYPOINT";
+
+        digital["distanceto"]["digi_a"].text = "----";
+        digital["distanceto"]["digi_b"].text = "-";
+
+        digital["bearing"]["digi_a"].text = "---";
+
+        digital["rbearing"]["digi_a"].text = "---";
+        digital["side"].text = "";
+    }
+
+    private function removeBwcBlinker():void {
+        if(_isBearingValid) {
+            Blinker.removeObject(waypoint_bearing);
+        }
+        Blinker.removeObject(analog["wpname"]);
+        Blinker.removeObject(digital["wpname"]);
+
+        Blinker.removeObject(digital["distanceto"]["digi_a"]);
+        Blinker.removeObject(digital["distanceto"]["digi_b"]);
+
+        Blinker.removeObject(digital["bearing"]["digi_a"]);
+    }
+
+    private function removeRBearingBlinker():void {
+        Blinker.removeObject(digital["rbearing"]["digi_a"]);
+        Blinker.removeObject(digital["side"]);
+    }
+
+    private function setEtaInvalid():void {
+        digitalBackground["time_a"].text = "";
+        digitalBackground["time_b"].text = "";
+        digitalBackground["time_c"].text = "";
+        digital["day"]["digi_a"].text = "--";
+        digital["hour"]["digi_a"].text = "--";
+        digital["minute"]["digi_a"].text = "--";
+
+        digitalBackgroundBatch.render();
+    }
+
+    private function removeEtaBlinker():void {
+        Blinker.removeObject(digital["day"]["digi_a"]);
+        Blinker.removeObject(digital["hour"]["digi_a"]);
+        Blinker.removeObject(digital["minute"]["digi_a"]);
+    }
+
+    private function setCTInvalid():void {
+        _lastCT = null;
+        _isCTValid = false;
+
+        Blinker.removeObject(waypoint_bearing["crosstrack_error"]);
+        waypoint_bearing["crosstrack_error"].visible = false;
+
+        digital["xte_a"]["digi_a"].text = "----";
+        digital["xte_b"]["digi_a"].text = "--";
+
+        analog["steer_right"].visible = false;
+        analog["steer_left"].visible = false;
+    }
+
+    private function removeCTBlinker():void {
+        if(_isCTValid) {
+            Blinker.removeObject(waypoint_bearing["crosstrack_error"]);
+        }
+        Blinker.removeObject(digital["xte_a"]["digi_a"]);
+        Blinker.removeObject(digital["xte_b"]["digi_a"]);
+    }
+
+    private function uchange():void {
+        if(_lastBwc!=null) {
+            digital["distanceto"]["digi_a"].text = Splitter.withValue(_lastBwc.waypointDistance.value).a4;
+            digital["distanceto"]["digi_b"].text = Splitter.instance.b1;
+
+            digitalBackground["distance_unit"].text = _lastBwc.waypointDistance.getDynamicShortString();
+        }
+        if(_lastCT!=null) {
+            if(_lastCT.crossTrackError.getDynamicValue()!=Unit.INVALID_VALUE) {
+                digital["xte_a"]["digi_a"].text = Splitter.withValue(_lastCT.crossTrackError.getDynamicValue()).a4;
+                digital["xte_b"]["digi_a"].text = Splitter.instance.b2;
+            } else {
+                digital["xte_a"]["digi_a"].text = "----";
+                digital["xte_b"]["digi_a"].text = "--";
+            }
+
+            digitalBackground["ct_unit"].text = _lastCT.crossTrackError.getUnitShortString();
+        }
+
+        digitalBackgroundBatch.render();
+    }
+
+    private function toTime(n:Number):String {
+        return Splitter.withValue(n).a02;
+    }
+
+    private function to180(value:Number):Number {
+        return (value>180) ? (value - 360) : value;
+    }
+}
+}

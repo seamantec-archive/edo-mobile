@@ -1,0 +1,18 @@
+<stage>
+    <width>320</width>
+    <height>480</height>
+    <instrument>
+        <x>0</x>
+        <y>0</y>
+        <w>160</w>
+        <h>160</h>
+        <type>components.instruments.Compass</type>
+    </instrument>
+    <instrument>
+        <x>0</x>
+        <y>160</y>
+        <w>320</w>
+        <h>320</h>
+        <type>components.instruments.Tacticomp</type>
+    </instrument>
+</stage>

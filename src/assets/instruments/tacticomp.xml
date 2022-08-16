@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InstrumentAtlas>
+  <SubTexture name="instance11" x="1508" y="0" width="245" height="245" pivotX="-78" pivotY="-78" originX="0" originY="0" originWidth="244" originHeight="244" visible="true" color="0"/>
+  <SubTexture name="instance12" x="1508" y="247" width="212" height="117" pivotX="-99" pivotY="-155" originX="0" originY="0" originWidth="211" originHeight="116" visible="true" color="0"/>
+  <TextField name="port" font="DigitalEDOpr" x="196" y="179" width="105" height="52" pivotX="1" pivotY="1" size="46" bold="false" italic="false" color="0" defaultText="888"/>
+  <SubTexture name="btn_rec" x="1433" y="304" width="58" height="58" pivotX="28" pivotY="28" originX="200" originY="117" originWidth="57" originHeight="57" visible="true" color="0">
+    <SubTexture name="instance13" x="-1" y="-1" width="58" height="58" pivotX="28" pivotY="28" originX="28" originY="28" originWidth="57" originHeight="57" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="instance18" x="1862" y="23" width="13" height="12" pivotX="-194" pivotY="-4" originX="0" originY="0" originWidth="12" originHeight="11" visible="true" color="0"/>
+  <SubTexture name="help_btn" x="1508" y="366" width="133" height="30" pivotX="66" pivotY="14" originX="200" originY="299" originWidth="132" originHeight="29" visible="true" color="0"/>
+  <TextField name="starboard" font="DigitalEDOpr" x="82" y="179" width="104" height="53" pivotX="1" pivotY="1" size="47" bold="false" italic="false" color="0" defaultText="888"/>
+  <TextField name="angle" font="Arial Bold" x="175" y="101" width="49" height="35" pivotX="1" pivotY="1" size="31" bold="true" italic="false" color="16777215" defaultText="45"/>
+  <SubTexture name="twind" x="1809" y="23" width="17" height="16" pivotX="8" pivotY="196" originX="200" originY="200" originWidth="16" originHeight="15" visible="true" color="0">
+    <SubTexture name="instance20" x="-1" y="-1" width="17" height="16" pivotX="8" pivotY="196" originX="8" originY="196" originWidth="16" originHeight="15" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="rudder_bar" x="1877" y="23" width="3" height="11" pivotX="0" pivotY="5" originX="200" originY="239" originWidth="3" originHeight="14" visible="true" color="0">
+    <SubTexture name="instance10" x="-1" y="-1" width="4" height="11" pivotX="0" pivotY="5" originX="0" originY="5" originWidth="3" originHeight="11" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="piros" x="1202" y="0" width="151" height="302" pivotX="-2" pivotY="150" originX="1" originY="200" originWidth="196" originHeight="391" visible="true" color="0">
+    <SubTexture name="instance4" x="-1" y="-1" width="151" height="302" pivotX="-2" pivotY="150" originX="-2" originY="150" originWidth="150" originHeight="301" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="help_over" x="402" y="0" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="true" color="0">
+    <SubTexture name="multi_analog" x="-1" y="-1" width="400" height="400" pivotX="0" pivotY="0" originX="0" originY="0" originWidth="400" originHeight="400" visible="true" color="0">
+      <SubTexture name="instance21" x="-1" y="-1" width="400" height="400" pivotX="0" pivotY="0" originX="0" originY="0" originWidth="400" originHeight="400" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance22" x="-1" y="-1" width="400" height="400" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="400" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="minus_btn" x="1355" y="304" width="76" height="58" pivotX="37" pivotY="28" originX="143" originY="115" originWidth="75" originHeight="57" visible="true" color="0"/>
+  <SubTexture name="zold" x="1355" y="0" width="151" height="302" pivotX="0" pivotY="150" originX="200" originY="200" originWidth="195" originHeight="391" visible="true" color="0">
+    <SubTexture name="instance6" x="-1" y="-1" width="151" height="302" pivotX="0" pivotY="150" originX="0" originY="150" originWidth="150" originHeight="301" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="right_mask" x="-1" y="-1" width="153" height="306" pivotX="153" pivotY="153" originX="200" originY="200" originWidth="200" originHeight="400" visible="true" color="0">
+    <SubTexture name="instance5" x="-1" y="-1" width="153" height="306" pivotX="153" pivotY="153" originX="153" originY="153" originWidth="153" originHeight="306" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="instance2" x="0" y="0" width="400" height="400" pivotX="0" pivotY="0" originX="0" originY="0" originWidth="400" originHeight="400" visible="true" color="0"/>
+  <SubTexture name="WPT" x="-1" y="-1" width="149" height="25" pivotX="74" pivotY="154" originX="200" originY="200" originWidth="148" originHeight="24" visible="true" color="0">
+    <TextField name="waypointname" font="Arial Bold" x="0" y="11" width="148" height="13" pivotX="1" pivotY="1" size="11" bold="true" italic="false" color="0" defaultText="Waypoint Name"/>
+    <SubTexture name="instance17" x="1847" y="23" width="13" height="13" pivotX="6" pivotY="154" originX="74" originY="154" originWidth="12" originHeight="12" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="current" x="1828" y="23" width="17" height="16" pivotX="8" pivotY="133" originX="200" originY="200" originWidth="16" originHeight="15" visible="true" color="0">
+    <SubTexture name="instance19" x="-1" y="-1" width="17" height="16" pivotX="8" pivotY="133" originX="8" originY="133" originWidth="16" originHeight="15" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="plus_btn" x="1202" y="304" width="76" height="58" pivotX="37" pivotY="28" originX="256" originY="115" originWidth="75" originHeight="57" visible="true" color="0"/>
+  <TextField name="rudder" font="DigitalEDOpr" x="184" y="251" width="71" height="35" pivotX="1" pivotY="1" size="31" bold="false" italic="false" color="0" defaultText="-88"/>
+  <SubTexture name="cog" x="-1" y="-1" width="14" height="79" pivotX="6" pivotY="200" originX="200" originY="200" originWidth="13" originHeight="78" visible="true" color="0">
+    <SubTexture name="cog2" x="1725" y="247" width="14" height="37" pivotX="6" pivotY="18" originX="6" originY="40" originWidth="13" originHeight="36" visible="true" color="0">
+      <SubTexture name="instance15" x="-1" y="-1" width="14" height="37" pivotX="6" pivotY="18" originX="6" originY="18" originWidth="13" originHeight="36" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance14" x="1722" y="247" width="1" height="79" pivotX="0" pivotY="200" originX="6" originY="200" originWidth="1" originHeight="78" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="compass" x="804" y="0" width="396" height="396" pivotX="197" pivotY="197" originX="200" originY="200" originWidth="395" originHeight="395" visible="true" color="0">
+    <SubTexture name="instance16" x="-1" y="-1" width="396" height="396" pivotX="197" pivotY="197" originX="197" originY="197" originWidth="395" originHeight="395" visible="true" color="0"/>
+  </SubTexture>
+  <SubTexture name="instance9" x="1809" y="0" width="222" height="21" pivotX="-89" pivotY="-228" originX="0" originY="0" originWidth="221" originHeight="20" visible="true" color="0"/>
+  <SubTexture name="LLN" x="-1" y="-1" width="52" height="185" pivotX="26" pivotY="184" originX="200" originY="200" originWidth="52" originHeight="184" visible="true" color="0">
+    <SubTexture name="LLN2" x="1755" y="187" width="52" height="185" pivotX="26" pivotY="184" originX="26" originY="184" originWidth="52" originHeight="184" visible="true" color="0">
+      <SubTexture name="instance8" x="-1" y="-1" width="52" height="185" pivotX="26" pivotY="184" originX="26" originY="184" originWidth="52" originHeight="184" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="LLN1" x="1755" y="0" width="52" height="185" pivotX="26" pivotY="184" originX="26" originY="184" originWidth="52" originHeight="184" visible="true" color="0">
+      <SubTexture name="instance7" x="-1" y="-1" width="52" height="185" pivotX="26" pivotY="184" originX="26" originY="184" originWidth="52" originHeight="184" visible="true" color="0"/>
+    </SubTexture>
+  </SubTexture>
+  <SubTexture name="left_mask" x="-1" y="-1" width="153" height="306" pivotX="0" pivotY="153" originX="200" originY="200" originWidth="200" originHeight="400" visible="true" color="0">
+    <SubTexture name="instance3" x="-1" y="-1" width="153" height="306" pivotX="0" pivotY="153" originX="0" originY="153" originWidth="153" originHeight="306" visible="true" color="0"/>
+  </SubTexture>
+</InstrumentAtlas>

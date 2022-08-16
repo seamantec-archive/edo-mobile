@@ -1,0 +1,161 @@
+/**
+ * Created by seamantec on 10/12/14.
+ */
+package com.ui {
+
+import com.common.AppProperties;
+import com.utils.FontFactory;
+
+import flash.display.BitmapData;
+import flash.display.Sprite;
+import flash.display.StageQuality;
+import flash.text.AntiAliasType;
+import flash.text.TextField;
+import flash.text.TextFieldAutoSize;
+import flash.text.TextFormat;
+import flash.text.TextFormatAlign;
+
+import starling.textures.Texture;
+
+public class DigitalDropdownList {
+
+    public static const ITEM_HEIGHT:Number = EdoMobile.FINGER_SIZE / AppProperties.screenScaleRatio;
+
+    public static const ITEM_COUNT:int = 27;
+
+    private static var _instance:DigitalDropdownList;
+
+    private var _items:Vector.<DigitalDropdownListItem>;
+
+    private var _hasScale:Boolean;
+
+    private var containerSprite:Sprite = new Sprite();
+
+    private var _texture:Texture;
+
+    protected static var textFormater:TextFormat;
+
+    protected var width:int = 0;
+
+    public function DigitalDropdownList(width:Number) {
+        if (textFormater == null) {
+            textFormater = new TextFormat();
+            textFormater.align = TextFormatAlign.LEFT;
+            textFormater.font = FontFactory.arialText;
+            textFormater.bold = true;
+            textFormater.size = ITEM_HEIGHT * 0.7;
+            textFormater.color = 0x000000;
+        }
+        this.width = width;
+        containerSprite.graphics.beginFill(0xc9c9c9);
+        containerSprite.graphics.drawRect(0, 0, width, h);
+        _items = new Vector.<DigitalDropdownListItem>();
+
+        addItem("apparentwind", "windAngle", "AWA", false);
+        addItem("apparentwind", "windDirection", "AWD");
+        addItem("apparentwind", "windSpeed", "AWS");
+
+        addItem("truewindc", "windAngle", "TWA", false);
+        addItem("truewindc", "windDirection", "TWD");
+        addItem("truewindc", "windSpeed", "TWS");
+
+        addItem("mwd", "windDirection", "GWD");
+        addItem("mwd", "windSpeed", "GWS");
+
+        addItem("vhw", "waterSpeed", "STW");
+        addItem("positionandspeed", "sog", "SOG");
+
+        addItem("vmgwind", "wind", "VMG Wind");
+        addItem("vmgwaypoint", "waypoint", "VMG Waypoint");
+
+        addItem("heading", "heading", "Heading", false);
+        addItem("positionandspeed", "cog", "COG", false);
+
+        addItem("rsa", "rudderSensorStarboard", "Rudder");
+        addItem("waterdepth", "waterDepthWithOffset", "Waterdepth");
+
+        addItem("setanddrift", "angleset", "Set");
+        addItem("setanddrift", "drift", "Drift");
+
+        addItem("mda", "airTemp", "Air temp.");
+        addItem("mtw", "temperature", "Water temp.");
+        addItem("mda", "barometricPressure", "Atm. pressure");
+//
+        addItem("performance", "performance", "Performance", false);
+        addItem("performance", "polarSpeed", "Target speed");
+        addItem("performance", "beatAngle", "Beat angle", false);
+        addItem("performance", "beatVmg", "Beat vmg", false);
+        addItem("performance", "runAngle", "Run angle", false);
+        addItem("performance", "runVmg", "Run vmg", false);
+
+//        addItem("heading", "variation", "Magnetic variation", false);
+        render();
+        _hasScale = false;
+    }
+
+    public static function getInstance(width:Number = 0):DigitalDropdownList {
+        if (_instance == null) {
+            if (width == 0) {
+                width = AppProperties.screenWidth;
+            }
+            _instance = new DigitalDropdownList(width);
+        }
+
+        return _instance;
+    }
+
+    public function getItem(index:int):DigitalDropdownListItem {
+        return _items[index];
+    }
+
+    public function getItemIndex(item:DigitalDropdownListItem):int {
+        return _items.indexOf(item);
+    }
+
+    private function addItem(key:String, data:String, label:String, hasMinMax:Boolean = true):void {
+        addLabel(label, 3, _items.length * ITEM_HEIGHT);
+        _items.push(new DigitalDropdownListItem(key, data, label, hasMinMax));
+    }
+
+    private function addLabel(label:String, x:Number = 0, y:Number = 0):void {
+        var tf:TextField = new TextField();
+        tf.autoSize = TextFieldAutoSize.LEFT;
+        tf.selectable = false;
+        tf.background = false;
+        tf.defaultTextFormat = textFormater;
+        tf.antiAliasType = AntiAliasType.ADVANCED;
+        tf.embedFonts = true;
+        tf.x = x;
+        tf.y = y;
+        tf.text = label;
+        containerSprite.addChild(tf);
+
+    }
+
+    private function render():void {
+        if (_texture == null) {
+            var bitmapData:BitmapData = new BitmapData(containerSprite.width, containerSprite.height, false, 0xc9c9c9);
+            bitmapData.drawWithQuality(containerSprite, null, null, null, null, true, StageQuality.BEST);
+            _texture = Texture.fromBitmapData(bitmapData);
+            for (var i:int = containerSprite.numChildren - 1; i >= 0; i--) {
+                var tf:TextField = containerSprite.removeChildAt(i) as TextField;
+                tf = null;
+            }
+            containerSprite = new Sprite();
+        }
+    }
+
+
+    public function get texture():Texture {
+        return _texture;
+    }
+
+    public function get w():int {
+        return this.width;
+    }
+
+    public function get h():int {
+        return ITEM_COUNT * ITEM_HEIGHT;
+    }
+}
+}

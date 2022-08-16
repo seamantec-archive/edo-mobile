@@ -1,0 +1,160 @@
+/**
+ * Created by seamantec on 03/09/14.
+ */
+package components.lists {
+
+import flash.geom.Point;
+
+import starling.display.Image;
+
+import starling.display.Quad;
+import starling.display.QuadBatch;
+import starling.display.Sprite;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+import starling.text.TextField;
+import starling.textures.Texture;
+
+public class ListItem extends Sprite {
+
+    protected var _bg:Quad;
+    protected var _color:uint;
+    protected var _alpha:Number;
+    protected var _height:Number;
+
+    protected var _labels:Vector.<TextField>;
+
+    private var _touchPoint:Point;
+    private var _touchCallback:Function;
+    private var _touchCallbackArgs:*;
+
+    public function ListItem(width:Number, height:Number, color:uint = uint.MAX_VALUE, alpha:Number = 1, withQuadBatcher = true) {
+        _color = color;
+        _alpha = alpha;
+        _height = height;
+        drawBg(width, height, color, alpha);
+
+
+        _labels = new Vector.<TextField>();
+
+        this.addEventListener(TouchEvent.TOUCH, onTouch);
+        _touchCallback = null;
+    }
+
+    public static function fromQuadBatch(quadBatch:QuadBatch):ListItem {
+        var item:ListItem = new ListItem(quadBatch.width, quadBatch.height, uint.MAX_VALUE, 1, false);
+        item.addChild(quadBatch.clone());
+
+        return item;
+    }
+
+    public static function fromTexture(texture:Texture, w:int, h:int):ListItem{
+        var item:ListItem = new ListItem(w,h,  uint.MAX_VALUE, 1, false)
+        item.addChild(new Image(texture));
+        return item;
+    }
+
+    public function destroy():void {
+        this.removeFromParent(true);
+    }
+
+    protected function drawBg(width:Number, height:Number, color:uint, alpha:Number):void {
+        _bg = new Quad(width, height, color);
+        _bg.alpha = alpha;
+        this.addChild(_bg);
+    }
+
+    public function addLabel(label:String, font:TextField, x:Number = 0, y:Number = 0):void {
+        if (font != null) {
+            font.x = x;
+            font.y = y;
+            font.text = label;
+
+            this.addChild(font);
+
+            _labels.push(font);
+        }
+    }
+
+    public function getLabelByIndex(index:int):TextField {
+        return (index>=0 && index<_labels.length) ? _labels[index] : null;
+    }
+
+    public function getLabelByText(text:String):TextField {
+        for (var i:int = 0; i < _labels.length; i++) {
+            var label:TextField = _labels[i];
+            if (label.text == text) {
+                return label;
+            }
+        }
+        return null;
+    }
+
+    public function set backgroundColor(color:uint):void {
+        _bg.color = color;
+    }
+
+    override public function get height():Number {
+        return _height;
+    }
+
+    public function get color():uint {
+        return _color;
+    }
+
+    public function addTouchCallback(callback:Function, ...args):void {
+        _touchCallback = callback;
+        _touchCallbackArgs = args;
+    }
+
+    private function onTouch(event:TouchEvent):void {
+        var began:Touch = event.getTouch(this, TouchPhase.BEGAN);
+//        var ended:Touch = event.getTouch(this, TouchPhase.ENDED);
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+        }
+        //else if(ended && Math.abs(_touchPoint.x-ended.globalX)<EdoMobile.FINGER_SIZE && Math.abs(_touchPoint.y-ended.globalY)<EdoMobile.FINGER_SIZE) {
+//            if(_touchCallback!=null) {
+//                _touchCallback.call(null, _touchCallbackArgs);
+//            }
+//        }
+        if (touchIsEnd(event) && _touchCallback != null) {
+            _touchCallback.call(null, _touchCallbackArgs);
+        }
+    }
+
+    protected function touchIsEnd(event:TouchEvent):Boolean {
+        var began:Touch = event.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = event.getTouch(this, TouchPhase.ENDED);
+        if (event.touches.length > 1) {
+            return false;
+        }
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+            return false;
+        } else if (ended && Math.abs(_touchPoint.x - ended.globalX) < EdoMobile.FINGER_SIZE && Math.abs(_touchPoint.y - ended.globalY) < EdoMobile.FINGER_SIZE) {
+//            _quadBatcher.addDebugObject(globalToLocal(new Point(event.touches[0].globalX, event.touches[0].globalY)));
+            return true;
+        }
+        return false;
+    }
+
+
+//    public function setWidth(width:Number):void {
+//        var widthDiff:Number = width - this.width;
+//        var height:Number = this.height;
+//
+//        this.graphics.clear();
+//        this.graphics.beginFill(_color, _alpha);
+//        this.graphics.drawRect(x,y, width,height);
+//        this.graphics.endFill();
+//        /*
+//         for(var i:int=0; i<this.numChildren; i++) {
+//         var child:DisplayObject = this.getChildAt(i);
+//         child.x += widthDiff;
+//         }
+//         */
+//    }
+}
+}

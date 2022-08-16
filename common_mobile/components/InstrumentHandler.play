@@ -1,0 +1,121 @@
+/**
+ * Created by seamantec on 22/09/14.
+ */
+package components {
+
+import com.inAppPurchase.CommonStore;
+import com.sailing.IParserListener;
+import com.sailing.ParserNotifier;
+import com.sailing.SailData;
+import com.sailing.datas.BaseSailData;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.minMax.MinMaxHandler;
+import com.sailing.units.Unit;
+import com.utils.ObjectUtils;
+
+//import components.instruments.Perf1;
+//import components.instruments.Perf3;
+//
+//import components.instruments.Polar;
+//import components.instruments.PolarControl;
+
+import flash.utils.getTimer;
+
+public class InstrumentHandler implements IParserListener {
+
+    public static var previewSailData:SailData;
+
+    private static var _instance:InstrumentHandler = null;
+    private var instruments:Vector.<BaseInstrument> = new <BaseInstrument>[];
+
+    function InstrumentHandler() {
+//        if(!CommonStore.instance.isInstrumentsEnabled) {
+//            initPreviewSailData();
+//        }
+    }
+
+    public static function get instance():InstrumentHandler {
+        if (_instance == null) {
+            _instance = new InstrumentHandler();
+        }
+        return _instance;
+    }
+
+    public function addInstrument(instrument:BaseInstrument):void {
+//        instrument.preview = !CommonStore.instance.isInstrumentsEnabled;
+        instruments.push(instrument);
+        MinMaxHandler.instance.addListener(instrument);
+    }
+
+    public function removeInstrument(instrument:BaseInstrument):void {
+        for (var i:int = 0; i < instruments.length; i++) {
+            if (instruments[i] == instrument) {
+                instruments.splice(i, 1);
+                MinMaxHandler.instance.removeListener(instrument);
+                break;
+            }
+        }
+    }
+
+    public function sailDataChanged(key:String):void {
+        var instrument:BaseInstrument;
+        for (var i:int = 0; i < instruments.length; i++) {
+            instrument = instruments[i];
+            if(instrument.enabled) {
+                instrument.updateDatas(SailData.actualSailData);
+            }
+//            (CommonStore.instance.isInstrumentsEnabled) ? instruments[i].updateDatas(SailData.actualSailData) : instruments[i].previewUpdateDatas();
+        }
+    }
+
+    public function sailDataInvalidated(key:String):void {
+        for (var i:int = 0; i < instruments.length; i++) {
+            instruments[i].dataInvalidated(key);
+        }
+    }
+
+    public function sailDataPreInvalidated(key:String):void {
+        var instrument:BaseInstrument;
+        for (var i:int = 0; i < instruments.length; i++) {
+            instrument = instruments[i];
+            if(instrument.enabled) {
+                instrument.dataPreInvalidated(key);
+            }
+//            instruments[i].dataPreInvalidated(key);
+        }
+    }
+
+//    private function initPreviewSailData():void {
+//        previewSailData = new SailData();
+//        previewSailData.sailDataTimestamp = getTimer();
+//
+//        var properties:Array;
+//        var item:Object;
+//        var base:BaseSailData;
+//        var length:int = SailData.ownProperties.length;
+//        for(var i:int=0; i<length; i++) {
+//            base = previewSailData[SailData.ownProperties[i]];
+//            base.lastTimestamp = getTimer();
+//            properties = ObjectUtils.getProperties(base);
+//            for(var j:int=0; j<properties.length; j++) {
+//                item = base[properties[j]];
+//                if(item is Unit) {
+//                    (item as Unit).value = 1;
+//                } else if(item is String) {
+//                    item = " ";
+//                } else if(item is Number) {
+//                    item = 0;
+//                }
+//            }
+//        }
+//    }
+
+//    public function updatePreviewSailDataTimestamp():void {
+//        previewSailData.sailDataTimestamp = getTimer();
+//        var length:int = SailData.ownProperties.length;
+//        for(var i:int=0; i<length; i++) {
+//            previewSailData[SailData.ownProperties[i]].lastTimestamp = getTimer();
+//        }
+//    }
+}
+}

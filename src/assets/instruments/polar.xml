@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InstrumentAtlas>
+  <SubTexture name="analog" x="-1" y="-1" width="400" height="350" pivotX="200" pivotY="175" originX="200" originY="175" originWidth="400" originHeight="350" visible="true" color="0">
+    <SubTexture name="maxWind" x="-1" y="-1" width="143" height="113" pivotX="122" pivotY="149" originX="48" originY="350" originWidth="42" originHeight="33" visible="true" color="0">
+      <SubTexture name="instance5" x="0" y="352" width="131" height="111" pivotX="120" pivotY="148" originX="122" originY="149" originWidth="130" originHeight="110" visible="true" color="0"/>
+      <TextField name="digi_a" font="DigitalEDOpr" x="0" y="0" width="142" height="112" pivotX="1" pivotY="1" size="100" bold="false" italic="false" color="16777215" defaultText="--"/>
+    </SubTexture>
+    <SubTexture name="ico_ghost" x="236" y="352" width="39" height="26" pivotX="19" pivotY="12" originX="373" originY="26" originWidth="38" originHeight="25" visible="true" color="0">
+      <SubTexture name="instance9" x="-1" y="-1" width="39" height="26" pivotX="19" pivotY="12" originX="19" originY="12" originWidth="38" originHeight="25" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="ico_auto" x="195" y="352" width="39" height="26" pivotX="19" pivotY="12" originX="373" originY="26" originWidth="38" originHeight="25" visible="true" color="0">
+      <SubTexture name="instance8" x="-1" y="-1" width="39" height="26" pivotX="19" pivotY="12" originX="19" originY="12" originWidth="38" originHeight="25" visible="true" color="0"/>
+    </SubTexture>
+    <TextField name="text5" font="Amble Bold" x="174" y="182" width="52" height="21" pivotX="1" pivotY="1" size="18" bold="false" italic="false" color="16777215" defaultText="Text5&#xD;"/>
+    <SubTexture name="instance3" x="277" y="352" width="21" height="21" pivotX="6" pivotY="6" originX="381" originY="331" originWidth="20" originHeight="20" visible="true" color="0"/>
+    <SubTexture name="switch_btn3" x="148" y="352" width="45" height="43" pivotX="22" pivotY="21" originX="373" originY="26" originWidth="44" originHeight="43" visible="true" color="0"/>
+    <TextField name="text2" font="Amble Bold" x="174" y="84" width="52" height="21" pivotX="1" pivotY="1" size="18" bold="false" italic="false" color="16777215" defaultText="Text2&#xD;"/>
+    <SubTexture name="bigyo" x="322" y="352" width="11" height="9" pivotX="5" pivotY="4" originX="200" originY="23" originWidth="10" originHeight="8" visible="true" color="0">
+      <SubTexture name="instance6" x="-1" y="-1" width="11" height="9" pivotX="5" pivotY="4" originX="5" originY="4" originWidth="10" originHeight="8" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance4" x="300" y="352" width="20" height="11" pivotX="143" pivotY="-153" originX="200" originY="175" originWidth="19" originHeight="10" visible="true" color="0"/>
+    <TextField name="text6" font="Amble Bold" x="174" y="213" width="52" height="21" pivotX="1" pivotY="1" size="18" bold="false" italic="false" color="16777215" defaultText="Text6&#xD;"/>
+    <SubTexture name="instance2" x="0" y="0" width="400" height="350" pivotX="200" pivotY="175" originX="200" originY="175" originWidth="400" originHeight="350" visible="true" color="0"/>
+    <TextField name="text3" font="Amble Bold" x="174" y="116" width="52" height="21" pivotX="1" pivotY="1" size="18" bold="false" italic="false" color="16777215" defaultText="Text3&#xD;"/>
+    <TextField name="polar_name" font="Amble Bold" x="3" y="4" width="99" height="16" pivotX="1" pivotY="1" size="14" bold="false" italic="false" color="16777215" defaultText="Polar name&#xD;"/>
+    <SubTexture name="instance7" x="0" y="184" width="148" height="146" pivotX="-19" pivotY="166" originX="200" originY="175" originWidth="147" originHeight="145" visible="true" color="0"/>
+    <TextField name="text4" font="Amble Bold" x="174" y="147" width="52" height="21" pivotX="1" pivotY="1" size="18" bold="false" italic="false" color="16777215" defaultText="Text4&#xD;"/>
+    <TextField name="text1" font="Amble Bold" x="172" y="52" width="52" height="21" pivotX="1" pivotY="1" size="18" bold="false" italic="false" color="16777215" defaultText="Text1&#xD;"/>
+    <SubTexture name="instance10" x="133" y="352" width="13" height="101" pivotX="12" pivotY="160" originX="200" originY="175" originWidth="12" originHeight="100" visible="true" color="0"/>
+  </SubTexture>
+</InstrumentAtlas>

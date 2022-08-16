@@ -1,0 +1,28 @@
+/**
+ * Created by pepusz on 2014.09.03..
+ */
+package components.stages.instruments {
+import com.common.AppProperties;
+import com.inAppPurchase.CommonStore;
+
+import components.*;
+
+public class Stage5 extends EdoStage {
+
+    public static const ID:String = "stage5";
+
+    public function Stage5() {
+        var name:String = "Page 5"
+        if(AppProperties.isJunkIpad) {
+            name = "Page 4"
+        }
+        super(ID, name);
+
+        buildFromFile();
+
+        if(!CommonStore.instance.isPolarEnabled) {
+            addPurchaseButton(EdoStage.PURCHASE_TYPE_POLAR);
+        }
+    }
+}
+}

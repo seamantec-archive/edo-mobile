@@ -1,0 +1,282 @@
+/**
+ * Created by pepusz on 2014.09.03..
+ */
+package components {
+import com.common.AppProperties;
+import com.events.HorizontalTouchEvent;
+import com.events.VerticalTouchEvent;
+import com.sailing.units.UnitHandler;
+import com.store.SettingsConfigs;
+
+import components.lists.List;
+
+import starling.animation.Transitions;
+import starling.animation.Tween;
+import starling.core.Starling;
+import starling.display.Quad;
+import starling.display.Sprite;
+import starling.events.Event;
+
+public class Menu extends Sprite {
+
+    DS::mobile {
+        public static const WIDTH:Number = AppProperties.screenWidth*0.7;
+    }
+    DS::ipad {
+        public static const WIDTH:Number = AppProperties.screenWidth*0.3;
+    }
+
+    private var isOpen:Boolean = false;
+
+    private var _menu:Sprite;
+
+    private var _connectionSettings:ConnectionSettings;
+    private var _signSettings:SignSettings;
+    private var _soundSettings:SoundSettings;
+    private var _screenSettings:ScreenSettings;
+    private var _logfileSettings:LogFileSettings;
+    private var _speedSettings:SpeedSettings;
+    private var _windSettings:WindCorrectionSetting;
+    private var _unitSettings:UnitSettings;
+    private var _storeSettings:StoreSettings;
+    private var _aboutSettings:AboutSettings;
+
+    private var _fling:Sprite;
+    private var _flingTo:Number;
+    private var _flingDistance:Number;
+
+    public function Menu() {
+        super();
+
+        this.y = 0;
+        this.x = 0;
+        this.visible = false;
+
+        _menu = new Sprite();
+
+        _connectionSettings = new ConnectionSettings();
+        _signSettings = new SignSettings();
+        _soundSettings = new SoundSettings();
+        _screenSettings = new ScreenSettings();
+        _logfileSettings = new LogFileSettings();
+        _speedSettings = new SpeedSettings();
+        _windSettings = new WindCorrectionSetting();
+        _unitSettings = new UnitSettings();
+        _storeSettings = new StoreSettings();
+        _aboutSettings = new AboutSettings();
+
+        repositionElements();
+        this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
+
+        Starling.current.root.addEventListener(HorizontalTouchEvent.MENU_MOVE, onHorizontalMove);
+        Starling.current.root.addEventListener(HorizontalTouchEvent.MENU_END, onHorizontalEnd);
+        Starling.current.root.addEventListener(VerticalTouchEvent.MENU_BEGIN, onVerticalBegin);
+        Starling.current.root.addEventListener(VerticalTouchEvent.MENU_MOVE, onVerticalMove);
+        Starling.current.root.addEventListener(VerticalTouchEvent.MENU_END, onVerticalEnd);
+    }
+
+    public function repositionElements(signSettingsHeight:Number = -1):void {
+        if(signSettingsHeight==-1) {
+            signSettingsHeight = _signSettings.height;
+        }
+        _connectionSettings.y = 15;
+        _signSettings.y = _connectionSettings.y+_connectionSettings.height+5;
+        _soundSettings.y = _signSettings.y + signSettingsHeight + 20;
+        _screenSettings.y = _soundSettings.y + 40;
+        _logfileSettings.y = _screenSettings.y + 40;
+        _speedSettings.y =_logfileSettings.y + _logfileSettings.height + 30;
+        _windSettings.y = _speedSettings.y + _speedSettings.height + 30;
+        _unitSettings.y = _windSettings.y + _windSettings.height + 20;
+        _storeSettings.y = _unitSettings.y + _unitSettings.height;
+        _aboutSettings.y = _storeSettings.y + _storeSettings.height + 20;
+    }
+
+    private function onHorizontalMove(e:Event):void {
+        if(!isOpen) {
+            _menu.y = 0;
+        }
+
+        var x:Number = e.data.distance;
+        this.visible = true;
+        x = (isOpen) ? (this.width + x) : x;
+        if(x<0) {
+            x = 0;
+        } else if(x>this.width) {
+            x = this.width;
+        }
+
+        EdoMobile.stageContainer.x = -EdoMobile.stageContainer.active.x + x;
+        EdoMobile.stageBottom.x = x;
+        EdoMobile.topBar.x = x;
+    }
+
+    private function onHorizontalEnd(e:Event):void {
+        var x:Number = EdoMobile.topBar.x;
+        var duration:Number = (Math.abs(x-this.width)/this.width)*0.2;
+        var stageContainerTween:Tween = new Tween(EdoMobile.stageContainer, duration, Transitions.EASE_IN);
+        var stageBottomTween:Tween = new Tween(EdoMobile.stageBottom, duration, Transitions.EASE_IN);
+        var topbarTween:Tween = new Tween(EdoMobile.topBar, duration, Transitions.EASE_IN);
+        if(x>(this.width/2)) {
+            isOpen = true;
+            _storeSettings.loadProducts();
+            stageContainerTween.animate("x", -EdoMobile.stageContainer.active.x + this.width);
+            stageBottomTween.animate("x", this.width);
+            topbarTween.animate("x", this.width);
+        } else {
+            isOpen = false;
+            var self:Menu = this;
+            SettingsConfigs.saveInstance();
+            UnitHandler.instance.saveUnits();
+            stageContainerTween.animate("x", -EdoMobile.stageContainer.active.x);
+            stageContainerTween.onComplete = function():void {
+                self.visible = false;
+            };
+            stageBottomTween.animate("x", 0);
+            topbarTween.animate("x", 0);
+        }
+        Starling.juggler.add(stageContainerTween);
+        Starling.juggler.add(stageBottomTween);
+        Starling.juggler.add(topbarTween);
+    }
+
+    private function onVerticalBegin(event:VerticalTouchEvent):void {
+        Starling.juggler.removeTweens(_menu);
+        Starling.juggler.removeTweens(_fling);
+    }
+
+    private function onVerticalMove(event:VerticalTouchEvent):void {
+        var y:Number = _menu.y + event.data.distance;
+        if(y>0) {
+            _menu.y += (y - _menu.y)*(1/y)*15;
+        } else if(y<(AppProperties.screenHeight-_menu.height)) {
+            _menu.y += (y - _menu.y)*(1/((AppProperties.screenHeight - _menu.height) - y))*15;
+        } else {
+            _menu.y = y;
+        }
+    }
+
+    private function onVerticalEnd(event:VerticalTouchEvent):void {
+        if (Math.abs(event.data.speed) >= 0.3) {
+            if (_fling == null) {
+                _fling = new Sprite();
+            }
+            _fling.y = _menu.y;
+            _flingDistance = event.data.speed * List.DYNAMIC_DURATION * 300;
+            _flingTo = _menu.y - _flingDistance;
+            if(_flingTo>(AppProperties.screenHeight/4)) {
+                _flingTo = AppProperties.screenHeight/4;
+            } else if(_flingTo<(AppProperties.screenHeight-_menu.height-(AppProperties.screenHeight/4))) {
+                _flingTo = AppProperties.screenHeight - _menu.height - (AppProperties.screenHeight/4);
+            }
+            Starling.juggler.tween(_fling, List.DYNAMIC_DURATION, {
+                transition: Transitions.EASE_OUT,
+                onUpdate: onFlingUpdate,
+                y: _flingTo
+            });
+        } else {
+            pushDown();
+        }
+    }
+
+    private function onFlingUpdate():void {
+        if(_menu.y>0 || _menu.y<(AppProperties.screenHeight-_menu.height)) {
+            Starling.juggler.removeTweens(_fling);
+            pushDown();
+        } else {
+            _menu.y = _fling.y;
+        }
+    }
+
+    private function pushDown():void {
+        if(_menu.y>0) {
+            Starling.juggler.tween(_menu, List.PUSH_DURATION, {
+                transition: Transitions.EASE_OUT,
+                y: 0
+            });
+        } else if(_menu.y<(AppProperties.screenHeight-_menu.height)) {
+            Starling.juggler.tween(_menu, List.PUSH_DURATION, {
+                transition: Transitions.EASE_OUT,
+                y: AppProperties.screenHeight - _menu.height
+            });
+        }
+    }
+
+    public function openClose():void {
+        trace("open close")
+        if(!isOpen) {
+            _menu.y = 0;
+        }
+        Starling.juggler.removeTweens(EdoMobile.stageContainer)
+        Starling.juggler.removeTweens(EdoMobile.stageBottom)
+        Starling.juggler.removeTweens(EdoMobile.topBar)
+        isOpen = !isOpen;
+        var stageContainerTween:Tween = new Tween(EdoMobile.stageContainer, 0.2, Transitions.EASE_IN);
+        var stageBottomTween:Tween = new Tween(EdoMobile.stageBottom, 0.2, Transitions.EASE_IN);
+        var topbarTween:Tween = new Tween(EdoMobile.topBar, 0.2, Transitions.EASE_IN);
+        if (isOpen) {
+            this.x = 0;
+            this.visible = true;
+            _storeSettings.loadProducts();
+            stageContainerTween.animate("x", -EdoMobile.stageContainer.active.x + this.width);
+            stageBottomTween.animate("x", this.width);
+            topbarTween.animate("x", this.width);
+        } else {
+            var self:Menu = this;
+            SettingsConfigs.saveInstance();
+            UnitHandler.instance.saveUnits();
+            stageContainerTween.animate("x", -EdoMobile.stageContainer.active.x);
+            stageContainerTween.onComplete = function():void {
+                self.visible = false;
+            };
+            stageBottomTween.animate("x", 0);
+            topbarTween.animate("x", 0);
+        }
+        Starling.juggler.add(stageContainerTween);
+        Starling.juggler.add(stageBottomTween);
+        Starling.juggler.add(topbarTween);
+    }
+
+    public function to(value:Number):void {
+        _menu.y = value;
+    }
+
+    public function toStore():void {
+        openClose();
+        to(AppProperties.screenHeight - _menu.height);
+    }
+
+    public function get storeY():Number {
+        return AppProperties.screenHeight - _aboutSettings.height - _storeSettings.height;
+    }
+
+    public function get signY():Number {
+        return _signSettings.y;
+    }
+
+    public function refreshMenuList():void {
+        //TODO implement refresh list and click
+    }
+
+    private function addedToStageHandler(event:Event):void {
+        _menu.addChild(_connectionSettings);
+        _menu.addChild(_signSettings);
+        _menu.addChild(_soundSettings);
+        _menu.addChild(_screenSettings);
+        _menu.addChild(_logfileSettings);
+        _menu.addChild(_speedSettings);
+        _menu.addChild(_windSettings);
+        _menu.addChild(_unitSettings);
+        _menu.addChild(_storeSettings);
+        _menu.addChild(_aboutSettings);
+
+        this.addChild(_menu);
+
+        var bg:Quad = new Quad(WIDTH,AppProperties.screenHeight, 0x656565);
+        this.addChildAt(bg, 0);
+    }
+
+    public function get open():Boolean {
+        return isOpen;
+    }
+}
+}

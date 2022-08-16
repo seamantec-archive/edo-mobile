@@ -1,0 +1,329 @@
+/**
+ * Created by seamantec on 06/11/14.
+ */
+package components.instruments {
+
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.sailing.ForgatHandler;
+import com.sailing.SailData;
+import com.sailing.Splitter;
+import com.sailing.datas.BaseSailData;
+import com.sailing.datas.PositionAndSpeed;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.nmeaParser.messages.NmeaZdaMessage;
+import com.utils.Assets;
+import com.utils.Blinker;
+
+import flash.events.TimerEvent;
+
+import flash.utils.Timer;
+
+import starling.events.TouchEvent;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+public class Clock extends BaseInstrument {
+
+    private var objDate:Date;
+    private var hour:int;
+    private var minute:int;
+    private var second:int;
+
+    private var _validTimer:Timer;
+
+    public var actualState:String = "";
+
+    private var forgatHandler:ForgatHandler;
+    private var forgatHandler1:ForgatHandler;
+
+    private var analog:DynamicSprite;
+    private var center:DynamicSprite;
+    private var centerBatch:InstrumentQuadBatcher;
+    private var digitalBackgroundBatch:InstrumentQuadBatcher;
+    private var digitalBackground:DynamicSprite;
+    private var digital:DynamicSprite;
+
+    public function Clock() {
+        super(Assets.getInstrument("clock"));
+
+        objDate = new Date();
+        forgatHandler = new ForgatHandler(analog["mutato_ora"], this);
+        forgatHandler1 = new ForgatHandler(analog["mutato_perc"], this);
+
+        setAnalog();
+        this.addEventListener(TouchEvent.TOUCH, digitalis);
+
+        _validTimer = new Timer(10000, 1);
+        _validTimer.addEventListener(TimerEvent.TIMER_COMPLETE, onTimer, false, 0, true);
+
+        setClockInvalid();
+    }
+
+    protected override function buildComponents():void {
+        var basic:Texture = Assets.getAtlas("basic_common");
+        var clock:Texture = Assets.getAtlas("clock");
+
+        analog = _instrumentAtlas.getComponentAsDynamicSprite(clock, "analog.instance3");
+
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.mutato_ora", analog);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.mutato_perc", analog, true);
+
+        center = new DynamicSprite();
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance7", center);
+        _instrumentAtlas.getComponentAsImageWithParent(clock, "analog.instance6", center);
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.label", center);
+
+        this.addChild(analog);
+
+        centerBatch = new InstrumentQuadBatcher(analog.width,analog.height);
+        centerBatch.addDisplayObject(center);
+        this.addChild(centerBatch.quadBatch);
+
+        digitalBackground = _instrumentAtlas.getComponentAsDynamicSprite(clock, "digital.instance8");
+
+        _instrumentAtlas.getComponentAsImageWithParent(clock, "digital.instance10", digitalBackground);
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.instance1135", digitalBackground, VAlign.CENTER,HAlign.LEFT);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.instance1136", digitalBackground, VAlign.CENTER,HAlign.LEFT);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.label2", digitalBackground, VAlign.CENTER,HAlign.LEFT);
+
+        digital = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi1_a", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi1_a"]["a"].x -= 2;
+        digital["digi1_a"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi1_b", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi1_b"]["a"].x -= 2;
+        digital["digi1_b"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi1_c", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi1_c"]["a"].x -= 2;
+        digital["digi1_c"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi2_a", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi2_a"]["a"].x -= 2;
+        digital["digi2_a"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi2_b", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi2_b"]["a"].x -= 2;
+        digital["digi2_b"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi2_c", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi2_c"]["a"].x -= 2;
+        digital["digi2_c"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi3_a", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi3_a"]["a"].x -= 2;
+        digital["digi3_a"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi3_b", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi3_b"]["a"].x -= 2;
+        digital["digi3_b"]["a"].y -= 5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi3_c", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, .89);
+        digital["digi3_c"]["a"].x -= 2;
+        digital["digi3_c"]["a"].y -= 5;
+
+        digitalBackgroundBatch = new InstrumentQuadBatcher();
+        digitalBackgroundBatch.addDisplayObject(digitalBackground);
+        this.addChild(digitalBackgroundBatch.quadBatch);
+
+        this.addChild(digital);
+    }
+
+    private function setAnalog():void {
+        analog.visible = true;
+        centerBatch.quadBatch.visible = true;
+
+        digitalBackgroundBatch.quadBatch.visible = false;
+        digital.visible = false;
+    }
+
+    private function setDigital():void {
+        analog.visible = false;
+        centerBatch.quadBatch.visible = false;
+
+        digitalBackgroundBatch.quadBatch.visible = true;
+        digital.visible = true;
+    }
+
+    private function digitalis(event:TouchEvent):void {
+        if (touchIsEnd(event)) {
+            if (analog.visible) {
+                setDigital();
+                actualState = "digital";
+            } else {
+                setAnalog();
+                actualState = "analog";
+            }
+        }
+    }
+
+    private function setState(value:String):void {
+        actualState = value;
+        if (value == "digital") {
+            setDigital();
+        } else if (value == "analog") {
+            setAnalog();
+        }
+    }
+
+    public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        if (_validTimer.running) {
+            _validTimer.reset();
+        }
+        if(datas!=null && !isNaN(datas.sailDataTimestamp) && datas.sailDataTimestamp!=0) {
+            removeBlinker();
+
+            setClock(datas.sailDataTimestamp, datas.zda.offsetInMin, datas.positionandspeed);
+        } else {
+            setClockInvalid();
+        }
+    }
+
+    public override function updateState(stateType:String):void {
+        setState(stateType);
+    }
+
+    public override function dataInvalidated(key:String):void {
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if(!isNaN(SailData.actualSailData.sailDataTimestamp)) {
+            if (_validTimer.running) {
+                _validTimer.reset();
+            }
+            _validTimer.start();
+        }
+    }
+
+    public override function unitChanged():void {
+    }
+
+    public override function minMaxChanged():void {
+    }
+
+    private function removeBlinker():void {
+        Blinker.removeObject(analog["mutato_ora"]);
+        Blinker.removeObject(analog["mutato_perc"]);
+        Blinker.removeObject(digital["digi1_a"]["a"]);
+        Blinker.removeObject(digital["digi1_b"]["a"]);
+        Blinker.removeObject(digital["digi1_c"]["a"]);
+        Blinker.removeObject(digital["digi2_a"]["a"]);
+        Blinker.removeObject(digital["digi2_b"]["a"]);
+        Blinker.removeObject(digital["digi2_c"]["a"]);
+        Blinker.removeObject(digital["digi3_a"]["a"]);
+        Blinker.removeObject(digital["digi3_b"]["a"]);
+        Blinker.removeObject(digital["digi3_c"]["a"]);
+    }
+
+    private function setClock(ms:Number, offset:Number, position:PositionAndSpeed):void {
+        var date:Date = new Date(ms);
+        hour = date.getUTCHours();
+        minute = date.getUTCMinutes();
+        second = date.getUTCSeconds();
+
+        digital["digi1_a"]["a"].text = toHour(hour);
+        digital["digi1_b"]["a"].text = toMinute(minute);
+        digital["digi1_c"]["a"].text = toSecond(second);
+
+        forgatHandler.forgat(((hour%12)*(360/12))+(minute*(360/720)), { needTween: false });
+        forgatHandler1.forgat(minute*(360/60), { needTween: false });
+
+        if(offset==NmeaZdaMessage.INVALIDOFFSET) {
+            hour -= (date.getTimezoneOffset()/60);
+            if(digitalBackground["label2"].text!="Computer time") {
+                digitalBackground["label2"].text = "Computer time";
+                digitalBackgroundBatch.render();
+            }
+        } else {
+            date = new Date(ms+(offset*60000));
+            hour = date.getUTCHours();
+            if(digitalBackground["label2"].text!="Local time") {
+                digitalBackground["label2"].text = "Local time";
+                digitalBackgroundBatch.render();
+            }
+        }
+        digital["digi2_a"]["a"].text = toHour(hour);
+        digital["digi2_b"]["a"].text = toMinute(minute);
+        digital["digi2_c"]["a"].text = toSecond(second);
+
+        if(position.isValid()) {
+            date = new Date(ms  + (Math.round(position.lon/15)*3600000));
+            hour = date.getUTCHours();
+
+            digital["digi3_a"]["a"].text = toHour(hour);
+            digital["digi3_b"]["a"].text = toMinute(minute);
+            digital["digi3_c"]["a"].text = toSecond(second);
+        } else {
+            digital["digi3_a"]["a"].text = "--";
+            digital["digi3_b"]["a"].text = "--";
+            digital["digi3_c"]["a"].text = "--";
+        }
+    }
+
+    private function setClockInvalid():void {
+        analog["mutato_ora"].visible = false;
+        analog["mutato_perc"].visible = false;
+
+        digital["digi1_a"]["a"].text = "--";
+        digital["digi1_b"]["a"].text = "--";
+        digital["digi1_c"]["a"].text = "--";
+
+        digital["digi2_a"]["a"].text = "--";
+        digital["digi2_b"]["a"].text = "--";
+        digital["digi2_c"]["a"].text = "--";
+
+        digital["digi3_a"]["a"].text = "--";
+        digital["digi3_b"]["a"].text = "--";
+        digital["digi3_c"]["a"].text = "--";
+    }
+
+    private function toHour(hour:Number):String {
+        hour -= ((hour/24) >> 0)*24;
+        if(hour<0) {
+            hour += 24;
+        }
+        return Splitter.withValue(hour).a02;
+    }
+
+    private function toMinute(minute:Number):String {
+        minute -= ((minute/60) >> 0)*60;
+        if(minute<0) {
+            minute += 60;
+        }
+        return Splitter.withValue(minute).a02;
+    }
+
+    private function toSecond(second:Number):String {
+        second -= ((second/60) >> 0)*60;
+        if(second<0) {
+            second += 60;
+        }
+        return Splitter.withValue(second).a02;
+    }
+
+    private function onTimer(event:TimerEvent):void {
+        if(Blinker.containsObject(analog["mutato_ora"])) {
+            _validTimer.delay = 10000;
+
+            removeBlinker();
+            setClockInvalid();
+        } else {
+            _validTimer.delay = BaseSailData.PRE_VALID_THRESHOLD;
+            _validTimer.start();
+
+            Blinker.addObject(analog["mutato_ora"]);
+            Blinker.addObject(analog["mutato_perc"]);
+            Blinker.addObject(digital["digi1_a"]["a"]);
+            Blinker.addObject(digital["digi1_b"]["a"]);
+            Blinker.addObject(digital["digi1_c"]["a"]);
+            if (digital["digi2_a"]["a"] != "--") {
+                Blinker.addObject(digital["digi2_a"]["a"]);
+                Blinker.addObject(digital["digi2_b"]["a"]);
+                Blinker.addObject(digital["digi2_c"]["a"]);
+            }
+            if (digital["digi3_a"]["a"] != "--") {
+                Blinker.addObject(digital["digi3_a"]["a"]);
+                Blinker.addObject(digital["digi3_b"]["a"]);
+                Blinker.addObject(digital["digi3_c"]["a"]);
+            }
+        }
+    }
+}
+}

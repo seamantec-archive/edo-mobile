@@ -1,0 +1,152 @@
+/**
+ * Created with IntelliJ IDEA.
+ * User: pepusz
+ * Date: 2013.08.07.
+ * Time: 13:28
+ * To change this template use File | Settings | File Templates.
+ */
+package com.utils {
+import com.common.AppProperties;
+
+import flash.text.Font;
+
+import starling.text.BitmapFont;
+import starling.text.TextField;
+import starling.textures.Texture;
+import starling.utils.Color;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+public class FontFactory {
+
+    [Embed(source="../../assets/fonts/Amble-Regular.ttf",
+            fontFamily="Amble",
+            mimeType="application/x-font",
+            fontWeight="normal",
+            fontStyle="normal",
+            advancedAntiAliasing="true",
+            embedAsCFF="false")]
+    private static var Arial2:Class;
+    Font.registerFont(Arial2);
+
+    [Embed(source="../../assets/fonts/Amble-Bold.ttf",
+            fontFamily="Amble",
+            mimeType="application/x-font",
+            fontWeight="bold",
+            fontStyle="normal",
+            advancedAntiAliasing="true",
+            embedAsCFF="false")]
+    private static var Arial2Bold:Class;
+    Font.registerFont(Arial2Bold);
+
+//    [Embed(source="../../assets/fonts/digital_edo_pr.ttf",
+//            fontFamily="DigitalEDOpr",
+//            mimeType="application/x-font",
+//            fontWeight="normal",
+//            fontStyle="normal",
+//            advancedAntiAliasing="true",
+//            embedAsCFF="false")]
+//    private static var digitalFont:Class;
+//    Font.registerFont(digitalFont);
+
+    [Embed(source="../../assets/fonts/amble_black.fnt", mimeType="application/octet-stream")]
+    public static const AmbleBlackXml:Class;
+
+    [Embed(source="../../assets/fonts/amble_black.png")]
+    public static const AmbleBlackTexture:Class;
+
+    private static var ableBlackTexture:Texture;
+    private static var ambleBlackXml:XML;
+
+    [Embed(source="../../assets/fonts/digital/digital.fnt", mimeType="application/octet-stream")]
+    public static const DigitalXml:Class;
+
+    [Embed(source = "../../assets/fonts/digital/digital.png")]
+    public static const DigitalTexture:Class;
+
+    private static var _digitalTexture:Texture;
+    private static var _digitalXML:XML;
+
+    public static var arialText:String = "Amble";
+    public static var arialBoldText:String = "Amble";
+
+    public static function registerDigitalFont():void {
+        if (_digitalTexture == null) {
+            _digitalTexture = Texture.fromBitmap(new DigitalTexture());
+            _digitalXML = XML(new DigitalXml());
+            TextField.registerBitmapFont(new BitmapFont(_digitalTexture, _digitalXML));
+        }
+    }
+
+    public static function getDigitalBitmapFont(w:Number, h:Number, text:String, fontSize:Number, color:uint):TextField {
+       registerDigitalFont();
+       return new TextField(w,h, text, "DigitalEDOpr", fontSize, color);
+    }
+
+    public static function getWhiteCenterFont(w:int, h:int, fontSize:uint = 20, vAlign:String = VAlign.CENTER):TextField {
+        var tf:TextField = new TextField(w, h, "", arialText, fontSize, 0xfffffff, true);
+        tf.vAlign = vAlign;
+        tf.hAlign = HAlign.CENTER;
+        tf.autoScale = true;
+        return tf;
+    }
+
+    public static function getWhiteLeftFont(w:int, h:int, fontSize:uint = 20, vAlign:String = VAlign.CENTER):TextField {
+        var tf:TextField = new TextField(w, h, "", arialText, fontSize, 0xfffffff, true);
+        tf.vAlign = vAlign;
+        tf.hAlign = HAlign.LEFT;
+        tf.autoScale = true;
+        return tf;
+    }
+
+    public static function getWhiteRightFont(w:int, h:int, fontSize:uint = 20):TextField {
+        var tf:TextField = new TextField(w, h, "", arialText, fontSize, 0xfffffff, true);
+        tf.vAlign = VAlign.CENTER;
+        tf.hAlign = HAlign.RIGHT;
+//        tf.autoScale = true;
+
+        return tf;
+    }
+
+    public static function getBlackLeftFont(w:int, h:int, fontSize:uint = 20, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.LEFT):TextField {
+        var tf:TextField = new TextField(w, h, "", arialText, fontSize * AppProperties.screenScaleRatio, 0x000000, true);
+        tf.vAlign = vAlign;
+        tf.hAlign = hAlign;
+
+//        tf.autoScale = true;
+        return tf;
+    }
+
+    public static function getBlackLeftBitmapFont(w:int, h:int, fontSize:uint = 20):TextField {
+        if (ambleBlackXml == null) {
+            ableBlackTexture = Texture.fromBitmap(new AmbleBlackTexture());
+            ambleBlackXml = XML(new AmbleBlackXml());
+            TextField.registerBitmapFont(new BitmapFont(ableBlackTexture, ambleBlackXml));
+        }
+        var tf:TextField = new TextField(w, h, "0", "amble-black", fontSize, 0x000000, true);
+        tf.vAlign = VAlign.CENTER;
+        tf.hAlign = HAlign.LEFT;
+        //        tf.autoScale = true;
+        //        tf.touchable = false;
+        tf.batchable = true;
+        return tf;
+    }
+
+    public static function getBlackRightFont(w:int, h:int, fontSize:uint = 20):TextField {
+        var tf:TextField = new TextField(w, h, "", arialText, fontSize, 0x000000, true);
+        tf.vAlign = VAlign.CENTER;
+        tf.hAlign = HAlign.RIGHT;
+        tf.autoScale = true;
+        return tf;
+    }
+
+    public static function getBlackCenterFont(w:int, h:int, fontSize:uint = 20):TextField {
+        var tf:TextField = new TextField(w, h, "", arialText, fontSize, 0x000000, true);
+        tf.vAlign = VAlign.CENTER;
+        tf.hAlign = HAlign.CENTER;
+        tf.autoScale = true;
+        return tf;
+    }
+
+}
+}

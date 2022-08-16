@@ -1,0 +1,57 @@
+/**
+ * Created by seamantec on 03/07/14.
+ */
+package com.notification {
+
+import com.ui.StageBtn;
+import com.utils.Assets;
+
+import starling.events.Touch;
+
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+
+public class AlertWindow extends NotificationWindow {
+
+    private var _noCallback:Function;
+    private var _yesCallback:Function;
+
+    public function AlertWindow(type:int, msg:String, priority:int, yesCallback:Function, noCallback:Function, options:Object) {
+        super(type, msg, priority, (options!=null && options.hasOwnProperty("title")) ? options["title"] : "Confirmation", Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("exclamation_red"));
+
+        _noCallback = noCallback;
+        _yesCallback = yesCallback;
+
+        var yesBtn:StageBtn = new StageBtn("Yes");
+        yesBtn.addEventListener(TouchEvent.TOUCH, yesBtnHandler);
+        this.addButton(yesBtn);
+        var noBtn:StageBtn = new StageBtn("No");
+        noBtn.addEventListener(TouchEvent.TOUCH, noBtnHandler);
+        this.addButton(noBtn);
+    }
+
+    private function yesBtnHandler(e:TouchEvent):void {
+        var touch:Touch = e.getTouch(this.stage);
+        if (touch) {
+            if (touch.phase == TouchPhase.ENDED) {
+                _yesCallback.call();
+                NotificationHandler.close(this);
+                this.close();
+            }
+        }
+    }
+
+    private function noBtnHandler(e:TouchEvent):void {
+        var touch:Touch = e.getTouch(this.stage);
+        if (touch) {
+            if (touch.phase == TouchPhase.ENDED) {
+                if(_noCallback!=null) {
+                    _noCallback.call();
+                }
+                NotificationHandler.close(this);
+                this.close();
+            }
+        }
+    }
+}
+}

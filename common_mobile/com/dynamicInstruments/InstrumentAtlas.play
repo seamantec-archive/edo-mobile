@@ -1,0 +1,438 @@
+/**
+ * Created by seamantec on 30/09/14.
+ */
+package com.dynamicInstruments {
+
+import com.common.AppProperties;
+import com.ui.InstrumentTextField;
+import com.utils.FontFactory;
+import com.dynamicInstruments.AnimatedSprite;
+import flash.geom.Point;
+import flash.geom.Rectangle;
+import flash.utils.Dictionary;
+
+import starling.core.Starling;
+
+import starling.display.DisplayObjectContainer;
+
+import starling.display.Image;
+import starling.display.QuadBatch;
+import starling.display.Sprite;
+import starling.text.TextField;
+
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+import System.*;
+
+public class InstrumentAtlas {
+
+    private var _textureInfos:Dictionary;
+
+    public function InstrumentAtlas(xml:XML) {
+        _textureInfos = new Dictionary();
+        if(xml == null){
+        	throw new ArgumentNullException("XML");
+        }
+        parseAtlasXML(xml);
+    }
+
+    public function getComponentAsDynamicSpriteWithParent(textureAtlas:Texture, name:String, parent:DisplayObjectContainer, withScale:Boolean = false, withTexture:Boolean = true):DynamicSprite {
+        var info:InstrumentTextureInfo = getTextureInfo(name);
+        if(info==null) {
+            return null;
+        }
+        var sprite:DynamicSprite = getComponentAsDynamicSpriteByTextureInfo(textureAtlas, info, withScale, withTexture);
+        name = name.substring(name.lastIndexOf(".") + 1, name.length);
+        sprite.name = name;      
+        parent.addChild(sprite);
+
+        return sprite;
+    }
+
+    public function getComponentAsDynamicSprite(textureAtlas:Texture, name:String, withScale:Boolean = false, withTexture:Boolean = true):DynamicSprite {
+        return getComponentAsDynamicSpriteByTextureInfo(textureAtlas, getTextureInfo(name), withScale, withTexture);
+    }
+
+    public function getComponentAsSpriteWithParent(textureAtlas:Texture, name:String, parent:DisplayObjectContainer, withScale:Boolean = false, withTexture:Boolean = true):Sprite {
+        var info:InstrumentTextureInfo = getTextureInfo(name);
+        if(info==null) {
+            return null;
+        }
+        var sprite:Sprite = getComponentAsSpriteByTextureInfo(textureAtlas, info, withScale, withTexture);
+        name = name.substring(name.lastIndexOf(".") + 1, name.length);
+        sprite.name = name;      
+        parent.addChild(sprite);
+
+        return sprite;
+    }
+
+    public function getComponentAsSprite(textureAtlas:Texture, name:String, withScale:Boolean = false, withTexture:Boolean = true):Sprite {
+        return getComponentAsSpriteByTextureInfo(textureAtlas, getTextureInfo(name), withScale, withTexture);
+    }
+
+    public function getComponentAsImageWithParent(textureAtlas:Texture, name:String, parent:DisplayObjectContainer, withScale:Boolean = false):Image {
+        var info:InstrumentTextureInfo = getTextureInfo(name);
+        if(info==null) {
+            return null;
+        }
+        var image:Image = getComponentAsImageByTextureInfo(textureAtlas, info, withScale);
+        name = name.substring(name.lastIndexOf(".") + 1, name.length);
+        image.name = name;      
+        parent.addChild(image);
+
+        return image;
+    }
+
+ 
+
+    public function getComponentAsImage(textureAtlas:Texture, name:String, withScale:Boolean = false):Image {
+        return getComponentAsImageByTextureInfo(textureAtlas, getTextureInfo(name), withScale);
+    }
+
+    public function getComponentAsAnimatedSpriteWithParent(textureAtlas:Texture, name:String, parent:DisplayObjectContainer, withScale:Boolean = false):AnimatedSprite {
+        var info:InstrumentAnimationInfo = getAnimationInfo(name);
+        if(info==null) {
+            return null;
+        }
+        var spr:AnimatedSprite = getComponentAsAnimatedSpriteByAnimationInfo(textureAtlas, info, withScale);
+        name = name.substring(name.lastIndexOf(".") + 1, name.length);
+        spr.name = name;      
+        parent.addChild(spr);
+
+        return spr;
+    }
+
+    public function getComponentAsAnimatedSprite(textureAtlas:Texture, name:String, withScale:Boolean = false):AnimatedSprite {
+        return getComponentAsAnimatedSpriteByAnimationInfo(textureAtlas, getAnimationInfo(name), withScale);
+    }
+
+    public function getTextFieldComponentWithParent(textureAtlas:Texture, name:String, parent:DisplayObjectContainer, backgroundParent:DisplayObjectContainer, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.RIGHT, fontScale:Number = 1, color:uint = uint.MAX_VALUE):DynamicSprite {
+        var info:InstrumentTextureInfo = getTextureInfo(name);
+        if(info==null) {
+            return null;
+        }
+        var component:Object = getTextFieldComponentByTextureInfo(textureAtlas, info, vAlign, hAlign, fontScale, color);
+        name = name.substring(name.lastIndexOf(".") + 1, name.length);
+        //parent[name] = component.field;
+        if(backgroundParent!=null) {
+            backgroundParent.addChild(component.batch);
+        } else {
+            parent.addChild(component.batch);
+        }
+        //parent.addChild(parent[name]);
+
+        return component.field;
+    }
+
+    public function getTextFieldComponent(textureAtlas:Texture, name:String, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.RIGHT, fontScale:Number = 1, color:uint = uint.MAX_VALUE):DynamicSprite {
+        return getTextFieldComponentByTextureInfo(textureAtlas, getTextureInfo(name), vAlign, hAlign, fontScale, color, false).field;
+    }
+
+    public function getComponentAsTextField(name:String, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.CENTER, fontScale:Number = 1):TextField {
+        return getComponentByTextFieldInfo(getTextFieldInfo(name), vAlign, hAlign, fontScale);
+    }
+
+    public function getComponentAsTextFieldWithParent(name:String, parent:DisplayObjectContainer, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.CENTER, fontScale:Number = 1):TextField {
+        var info:InstrumentTextFieldInfo = getTextFieldInfo(name);
+        if(info==null) {
+            return null;
+        }
+        var field:TextField = getComponentByTextFieldInfo(info, vAlign, hAlign, fontScale);
+        name = name.substring(name.lastIndexOf(".") + 1, name.length);
+        field.name = name;      
+        parent.addChild(field);
+
+        return field;
+    }
+
+    private function getComponentAsDynamicSpriteByTextureInfo(textureAtlas:Texture, info:InstrumentTextureInfo, withScale:Boolean = false, withTexture:Boolean = true):DynamicSprite {
+        if(info==null) {
+            return null;
+        }
+
+        var spr:DynamicSprite = new DynamicSprite();
+        if(withTexture) {
+            spr.addChild(new Image(Texture.fromTexture(textureAtlas, info.region)));
+        }
+        spr.pivotX = info.pivot.x;
+        spr.pivotY = info.pivot.y;
+        if(withScale) {
+            spr.scaleX = info.origin.width / info.region.width;
+            spr.scaleY = info.origin.height / info.region.height;
+        }
+        spr.x = info.origin.x;
+        spr.y = info.origin.y;
+        spr.visible = info.visible;
+
+        return spr;
+    }
+
+    private function getComponentAsSpriteByTextureInfo(textureAtlas:Texture, info:InstrumentTextureInfo, withScale:Boolean = false, withTexture:Boolean = true):Sprite {
+        if(info==null) {
+            return null;
+        }
+
+        var spr:Sprite = new Sprite();
+        if(withTexture) {
+            spr.addChild(new Image(Texture.fromTexture(textureAtlas, info.region)));
+        }
+        spr.pivotX = info.pivot.x;
+        spr.pivotY = info.pivot.y;
+        if(withScale) {
+            spr.scaleX = info.origin.width / info.region.width;
+            spr.scaleY = info.origin.height / info.region.height;
+        }
+        spr.x = info.origin.x;
+        spr.y = info.origin.y;
+        spr.visible = info.visible;
+
+        return spr;
+    }
+
+    private function getComponentAsImageByTextureInfo(textureAtlas:Texture, info:InstrumentTextureInfo, withScale:Boolean = false):Image {
+        if(info==null) {
+            return null;
+        }
+
+        var img:Image = new Image(Texture.fromTexture(textureAtlas, info.region));
+        img.pivotX = info.pivot.x;
+        img.pivotY = info.pivot.y;
+        if(withScale) {
+            img.scaleX = info.origin.width / info.region.width;
+            img.scaleY = info.origin.height / info.region.height;
+        }
+        img.x = info.origin.x;
+        img.y = info.origin.y;
+        img.visible = info.visible;
+
+        return img;
+    }
+
+    private function getComponentAsAnimatedSpriteByAnimationInfo(textureAtlas:Texture, info:InstrumentAnimationInfo, withScale:Boolean = false):AnimatedSprite {
+        if(info==null) {
+            return null;
+        }
+
+        var spr:AnimatedSprite = new AnimatedSprite();
+        var i:int = 0;
+        for (var key:String in info.children) {
+            spr.addChildAt(getComponentAsImageByTextureInfo(textureAtlas, info.children[info.prefix + i], withScale), i);
+            i++;
+        }
+
+        return spr;
+    }
+
+    private function getComponentByTextFieldInfo(info:InstrumentTextFieldInfo, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.CENTER, fontScale:Number = 1):TextField {
+        if(info==null) {
+            return null;
+        }
+
+        FontFactory.registerDigitalFont();
+
+        var fontSize:Number = (fontScale==-1) ? info.size : _root.Math.floor(info.size*fontScale);
+
+        var field:TextField = new InstrumentTextField(info.region.width, info.region.height, info.defaultText, info.font, fontSize, info.color, info.bold);
+        field.vAlign = vAlign;
+        field.hAlign = hAlign;
+        field.pivotX = info.pivot.x;
+        field.pivotY = info.pivot.y;
+        field.x = info.region.x;
+        field.y = info.region.y;
+        if(fontScale==-1) {
+            field.autoScale = true;
+        }
+
+        return field;
+    }
+
+    private function getTextFieldComponentByTextureInfo(textureAtlas:Texture, info:InstrumentTextureInfo, vAlign:String = VAlign.CENTER, hAlign:String = HAlign.RIGHT, fontScale:Number = 1, color:uint = uint.MAX_VALUE, withBatch:Boolean = true):Object {
+        if(info==null) {
+            return null;
+        }
+
+        FontFactory.registerDigitalFont();
+        var batch:QuadBatch;
+        if(withBatch) {
+            batch = new QuadBatch();
+            batch.pivotX = info.pivot.x;
+            batch.pivotY = info.pivot.y;
+            batch.scaleX = info.origin.width / info.region.width;
+            batch.scaleY = info.origin.height / info.region.height;
+            batch.x = info.origin.x;
+            batch.y = info.origin.y;
+            batch.visible = info.visible;
+        }
+
+        var field:DynamicSprite = new DynamicSprite();
+        field.pivotX = info.pivot.x;
+        field.pivotY = info.pivot.y;
+        field.scaleX = info.origin.width / info.region.width;
+        field.scaleY = info.origin.height / info.region.height;
+        field.x = info.origin.x;
+        field.y = info.origin.y;
+        field.visible = info.visible;
+
+        if(info.children!=null) {
+            var textureInfo:InstrumentTextureInfo;
+            var textFieldInfo:InstrumentTextFieldInfo;
+            for(var key:String in info.children) {
+                if(info.children[key] is InstrumentTextureInfo) {
+                    textureInfo = info.children[key] as InstrumentTextureInfo;
+                    var img:Image = new Image(Texture.fromTexture(textureAtlas, textureInfo.region));
+                    img.pivotX = textureInfo.pivot.x;
+                    img.pivotY = textureInfo.pivot.y;
+                    img.x = textureInfo.origin.x;
+                    img.y = textureInfo.origin.y;
+                    img.visible = textureInfo.visible;
+                    if(color!=uint.MAX_VALUE) {
+                        img.color = color;
+                    }
+                    if(withBatch)
+                    { 
+                    	batch.addImage(img);
+                    } 
+                    else
+                    { 
+                    	field.addChild(img);
+                   	}
+                } else if(info.children[key] is InstrumentTextFieldInfo) {
+                    textFieldInfo = info.children[key] as InstrumentTextFieldInfo;
+                    field[key] = new TextField(textFieldInfo.region.width, textFieldInfo.region.height, textFieldInfo.defaultText, textFieldInfo.font, textFieldInfo.size*fontScale, (color!=uint.MAX_VALUE) ? color : textFieldInfo.color, textFieldInfo.bold);
+                    field[key].vAlign = vAlign;
+                    field[key].hAlign = hAlign;
+                    field[key].pivotX = textFieldInfo.pivot.x;
+                    field[key].pivotY = textFieldInfo.pivot.y;
+                    field[key].x = textFieldInfo.region.x;
+                    field[key].y = textFieldInfo.region.y;
+                    field.addChild(field[key]);
+                }
+            }
+        }
+
+        return { batch: batch, field: field };
+    }
+
+    public function getTextureInfo(name:String):InstrumentTextureInfo {
+        return getTextureInfoFromDictionary(name, _textureInfos);
+    }
+
+    private function getTextureInfoFromDictionary(name:String, dictionary:Dictionary):InstrumentTextureInfo {
+        if(dictionary!=null) {
+            var dot:int = name.indexOf(".");
+            if (dot > 0) {
+                var infoName:String = name.substr(0, dot);
+                var childrenName:String = name.substr(dot + 1, name.length - dot);
+                return getTextureInfoFromDictionary(childrenName, dictionary[infoName].children);
+            } else {
+                return dictionary[name];
+            }
+        }
+        return null;
+    }
+
+    public function getTextFieldInfo(name:String):InstrumentTextFieldInfo {
+        return getTextFieldInfoFromDictionary(name, _textureInfos);
+    }
+
+    private function getTextFieldInfoFromDictionary(name:String, dictionary:Dictionary):InstrumentTextFieldInfo {
+        if(dictionary!=null) {
+            var dot:int = name.indexOf(".");
+            if (dot > 0) {
+                var infoName:String = name.substr(0, dot);
+                var childrenName:String = name.substr(dot + 1, name.length - dot);
+                return getTextFieldInfoFromDictionary(childrenName, dictionary[infoName].children);
+            } else {
+                return dictionary[name];
+            }
+        }
+        return null;
+    }
+
+    public function getAnimationInfo(name:String):InstrumentAnimationInfo {
+        return getAnimationInfoFromDictionary(name, _textureInfos);
+    }
+
+    private function getAnimationInfoFromDictionary(name:String, dictionary:Dictionary):InstrumentAnimationInfo {
+        if(dictionary!=null) {
+            var dot:int = name.indexOf(".");
+            if (dot > 0) {
+                var infoName:String = name.substr(0, dot);
+                var childrenName:String = name.substr(dot + 1, name.length - dot);
+                return getAnimationInfoFromDictionary(childrenName, dictionary[infoName].children);
+            } else {
+                return dictionary[name];
+            }
+        }
+        return null;
+    }
+
+    private function parseAtlasXML(atlasXML:XML):void {
+        _textureInfos = traversalSubTexture(atlasXML);
+    }
+
+    private function traversalSubTexture(xml:XML):Dictionary {
+        var scale:Number = AppProperties.screenScaleRatio;//_textureAtlas.scale;
+        var result:Dictionary = new Dictionary();
+
+        for each(var item:XML in xml.SubTexture) {
+            var name:String = item.attribute("name");
+            var x:Number = parseFloat(item.attribute("x")) / scale;
+            var y:Number = parseFloat(item.attribute("y")) / scale;
+            var width:Number = parseFloat(item.attribute("width")) / scale;
+            var height:Number = parseFloat(item.attribute("height")) / scale;
+            var pivotX:Number = parseFloat(item.attribute("pivotX")) / scale;
+            var pivotY:Number = parseFloat(item.attribute("pivotY")) / scale;
+            var originX:Number = parseFloat(item.attribute("originX")) / scale;
+            var originY:Number = parseFloat(item.attribute("originY")) / scale;
+            var originWidth:Number = parseFloat(item.attribute("originWidth")) / scale;
+            var originHeight:Number = parseFloat(item.attribute("originHeight")) / scale;
+            var visible:Boolean = parseBool(item.attribute("visible"));
+
+            var children:Dictionary = null;
+            if (item.children().length() > 0) {
+                children = traversalSubTexture(item);
+            }
+
+            result[name] = new InstrumentTextureInfo(new Rectangle(x,y, width,height), new Point(pivotX, pivotY), new Rectangle(originX,originY, originWidth,originHeight), visible, children);
+        }
+
+        for each(var item2:XML in xml.Animation) {
+            var name:String = item2.attribute("name");
+
+            var children:Dictionary = null;
+            if (item2.children().length() > 0) {
+                children = traversalSubTexture(item2);
+            }
+
+            result[name] = new InstrumentAnimationInfo(name + "_", children);
+        }
+
+        for each(var item3:XML in xml.TextField) {
+            var name:String = item3.attribute("name");
+            var font:String = item3.attribute("font");
+            var x:Number = parseFloat(item3.attribute("x")) / scale;
+            var y:Number = parseFloat(item3.attribute("y")) / scale;
+            var width:Number = parseFloat(item3.attribute("width")) / scale;
+            var height:Number = parseFloat(item3.attribute("height")) / scale;
+            var pivotX:Number = parseFloat(item3.attribute("pivotX")) / scale;
+            var pivotY:Number = parseFloat(item3.attribute("pivotY")) / scale;
+            var size:Number = parseFloat(item3.attribute("size")) / scale;
+            var bold:Boolean = parseBool(item3.attribute("bold"));
+            var italic:Boolean = parseBool(item3.attribute("italic"));
+            var color:int = parseInt(item3.attribute("color"));
+            var defaultText:String = item3.attribute("defaultText");
+
+            result[name] = new InstrumentTextFieldInfo(font, new Rectangle(x, y, width, height), new Point(pivotX,pivotY), size, bold, italic, color, defaultText);
+        }
+
+        return result;
+    }
+
+    private static function parseBool(value:String):Boolean {
+        return value.toLowerCase() == "true";
+    }
+}
+}

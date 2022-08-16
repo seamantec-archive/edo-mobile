@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{FEACFBD2-3405-455C-9665-78FE426C6842};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{EF2CF079-B3E0-4132-849C-948A1987534A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>starling</RootNamespace>
+    <IPhoneResourcePrefix>Resources</IPhoneResourcePrefix>
+    <AssemblyName>starling</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing">
+      <HintPath>..\..\..\..\..\mono\play\lib\mono\gac\System.Drawing\4.0.0.0__b03f5f7f11d50a3a\System.Drawing.dll</HintPath>
+    </Reference>
+    <Reference Include="Xamarin.iOS" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="As\" />
+    <Folder Include="As\com\" />
+    <Folder Include="As\starling\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="MyClass.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="As\Game.play" />
+    <Compile Include="As\Main.play" />
+    <Compile Include="As\com\adobe\utils\AGALMiniAssembler.as" />
+    <Compile Include="As\starling\animation\DelayedCall.as" />
+    <Compile Include="As\starling\animation\IAnimatable.as" />
+    <Compile Include="As\starling\animation\Juggler.as" />
+    <Compile Include="As\starling\animation\Transitions.as" />
+    <Compile Include="As\starling\animation\Tween.as" />
+    <Compile Include="As\starling\core\RenderSupport.as" />
+    <Compile Include="As\starling\core\Starling.as" />
+    <Compile Include="As\starling\core\StatsDisplay.as" />
+    <Compile Include="As\starling\core\starling_internal.as" />
+    <Compile Include="As\starling\display\BlendMode.as" />
+    <Compile Include="As\starling\display\Button.as" />
+    <Compile Include="As\starling\display\ButtonState.as" />
+    <Compile Include="As\starling\display\DisplayObject.as" />
+    <Compile Include="As\starling\display\DisplayObjectContainer.as" />
+    <Compile Include="As\starling\display\Image.as" />
+    <Compile Include="As\starling\display\MovieClip.as" />
+    <Compile Include="As\starling\display\Quad.as" />
+    <Compile Include="As\starling\display\QuadBatch.as" />
+    <Compile Include="As\starling\display\Sprite.as" />
+    <Compile Include="As\starling\display\Sprite3D.as" />
+    <Compile Include="As\starling\display\Stage.as" />
+    <Compile Include="As\starling\errors\AbstractClassError.as" />
+    <Compile Include="As\starling\errors\AbstractMethodError.as" />
+    <Compile Include="As\starling\errors\MissingContextError.as" />
+    <Compile Include="As\starling\events\EnterFrameEvent.as" />
+    <Compile Include="As\starling\events\Event.as" />
+    <Compile Include="As\starling\events\EventDispatcher.as" />
+    <Compile Include="As\starling\events\KeyboardEvent.as" />
+    <Compile Include="As\starling\events\ResizeEvent.as" />
+    <Compile Include="As\starling\events\Touch.as" />
+    <Compile Include="As\starling\events\TouchEvent.as" />
+    <Compile Include="As\starling\events\TouchMarker.as" />
+    <Compile Include="As\starling\events\TouchPhase.as" />
+    <Compile Include="As\starling\events\TouchProcessor.as" />
+    <Compile Include="As\starling\filters\BlurFilter.as" />
+    <Compile Include="As\starling\filters\ColorMatrixFilter.as" />
+    <Compile Include="As\starling\filters\DisplacementMapFilter.as" />
+    <Compile Include="As\starling\filters\FragmentFilter.as" />
+    <Compile Include="As\starling\filters\FragmentFilterMode.as" />
+    <Compile Include="As\starling\text\BitmapChar.as" />
+    <Compile Include="As\starling\text\BitmapFont.as" />
+    <Compile Include="As\starling\text\MiniBitmapFont.as" />
+    <Compile Include="As\starling\text\TextField.as" />
+    <Compile Include="As\starling\text\TextFieldAutoSize.as" />
+    <Compile Include="As\starling\textures\AtfData.as" />
+    <Compile Include="As\starling\textures\ConcreteTexture.as" />
+    <Compile Include="As\starling\textures\RenderTexture.as" />
+    <Compile Include="As\starling\textures\SubTexture.as" />
+    <Compile Include="As\starling\textures\Texture.as" />
+    <Compile Include="As\starling\textures\TextureAtlas.as" />
+    <Compile Include="As\starling\textures\TextureOptions.as" />
+    <Compile Include="As\starling\textures\TextureSmoothing.as" />
+    <Compile Include="As\starling\utils\Color.as" />
+    <Compile Include="As\starling\utils\HAlign.as" />
+    <Compile Include="As\starling\utils\MathUtil.as" />
+    <Compile Include="As\starling\utils\MatrixUtil.as" />
+    <Compile Include="As\starling\utils\RectangleUtil.as" />
+    <Compile Include="As\starling\utils\ScaleMode.as" />
+    <Compile Include="As\starling\utils\SystemUtil.as" />
+    <Compile Include="As\starling\utils\VAlign.as" />
+    <Compile Include="As\starling\utils\VertexData.as" />
+    <Compile Include="As\starling\utils\cleanMasterString.as" />
+    <Compile Include="As\starling\utils\deg2rad.as" />
+    <Compile Include="As\starling\utils\execute.as" />
+    <Compile Include="As\starling\utils\formatString.as" />
+    <Compile Include="As\starling\utils\getNextPowerOfTwo.as" />
+    <Compile Include="As\starling\utils\rad2deg.as" />
+    <Compile Include="As\starling\utils\transformCoords.as" />
+    <Compile Include="As\starling\utils\AssetManager.as" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\iOS\Xamarin.iOS.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\playscript_libs\PlayScript.Dynamic_aot\PlayScript.Dynamic_aot-monotouch.csproj">
+      <Project>{CC73D545-B7C7-4FB4-996A-C76E8B0D5B81}</Project>
+      <Name>PlayScript.Dynamic_aot-monotouch</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\playscript_libs\pscorlib_aot\pscorlib_aot-monotouch.csproj">
+      <Project>{876BFFD1-CEFA-44DD-9243-A50958EF65DD}</Project>
+      <Name>pscorlib_aot-monotouch</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,87 @@
+/**
+ * Created by seamantec on 23/02/15.
+ */
+package com.ui {
+
+import flash.geom.Point;
+
+import starling.display.Sprite;
+import starling.events.Event;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+
+public class RadioButtonBar extends Sprite {
+
+    private var _buttons:Vector.<RadioButton>;
+    private var _touchPoint:Point;
+    private var _selected:int;
+
+    public function RadioButtonBar(x:int, y:int, labels:Array = null, fontSize:int = 16) {
+        this.x = x;
+        this.y = y;
+
+        _buttons = new Vector.<RadioButton>();
+
+        if (labels != null) {
+            var length:int = labels.length;
+            var button:RadioButton;
+            for (var i:int = 0; i < length; i++) {
+                button = new RadioButton(i, labels[i], fontSize);
+                button.x = i * button.width;
+                _buttons.push(button);
+
+                this.addChild(button);
+            }
+        }
+        var bLength:int = _buttons.length;
+        for (var i:int = 0; i < bLength; i++) {
+            _buttons[i].addEventListener(TouchEvent.TOUCH, onTouch);
+        }
+
+
+    }
+
+    public function getButton(index:int):RadioButton {
+        return (index >= 0 && index < _buttons.length) ? _buttons[index] as RadioButton : null;
+    }
+
+    public function set selected(index:int):void {
+        var length:int = _buttons.length;
+        for (var i:int = 0; i < length; i++) {
+            _buttons[i].selected = (i == index);
+        }
+        _selected = index;
+    }
+
+    public function get selected():int {
+        return _selected;
+    }
+
+//    public override function addEventListener(type:String, listener:Function):void {
+//        var length:int = _buttons.length;
+//        for (var i:int = 0; i < length; i++) {
+//            _buttons[i].addEventListener(type, listener);
+//        }
+//    }
+//
+//    public override function removeEventListener(type:String, listener:Function):void {
+//        var length:int = _buttons.length;
+//        for (var i:int = 0; i < length; i++) {
+//            _buttons[i].removeEventListener(type, listener);
+//        }
+//    }
+
+    private function onTouch(e:TouchEvent):void {
+        var began:Touch = e.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = e.getTouch(this, TouchPhase.ENDED);
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+        } else if (ended && Math.abs(_touchPoint.x - ended.globalX) < EdoMobile.FINGER_SIZE && Math.abs(_touchPoint.y - ended.globalY) < EdoMobile.FINGER_SIZE) {
+            var index:int = (e.currentTarget as RadioButton).index;
+            selected = index;
+            dispatchEvent(new Event(Event.CHANGE));
+        }
+    }
+}
+}

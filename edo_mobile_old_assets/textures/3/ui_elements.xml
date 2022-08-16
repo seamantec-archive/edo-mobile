@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="ui_elements.png">
+  <SubTexture name="about" x="0" y="0" width="604" height="501"/>
+  <SubTexture name="closedlist_element_bg" x="606" y="0" width="3" height="192"/>
+  <SubTexture name="openedlist_element_bg" x="606" y="194" width="3" height="192"/>
+  <SubTexture name="alarmlist_tegla" x="611" y="0" width="3" height="192"/>
+  <SubTexture name="dropdown" x="616" y="0" width="1131" height="123"/>
+  <SubTexture name="led_m" x="616" y="125" width="108" height="110"/>
+  <SubTexture name="led_off" x="726" y="125" width="108" height="110"/>
+  <SubTexture name="led_on" x="836" y="125" width="108" height="110"/>
+  <SubTexture name="btn1_down" x="946" y="125" width="240" height="105"/>
+  <SubTexture name="btn1_up" x="1188" y="125" width="240" height="105"/>
+  <SubTexture name="csusz_bal" x="1430" y="125" width="55" height="103"/>
+  <SubTexture name="pipa_off" x="1487" y="125" width="103" height="103"/>
+  <SubTexture name="csusz_jobb" x="1592" y="125" width="55" height="103"/>
+  <SubTexture name="pipa_on" x="616" y="237" width="103" height="103"/>
+  <SubTexture name="closeState_lg" x="721" y="237" width="99" height="99"/>
+  <SubTexture name="openState_lg" x="822" y="237" width="99" height="99"/>
+  <SubTexture name="reset_1" x="1649" y="125" width="96" height="96"/>
+  <SubTexture name="reset_2" x="923" y="237" width="96" height="96"/>
+  <SubTexture name="menu_btn02" x="1021" y="237" width="120" height="90"/>
+  <SubTexture name="menu_connected_btn01" x="1143" y="237" width="120" height="90"/>
+  <SubTexture name="menu_connected_btn02" x="1265" y="237" width="120" height="90"/>
+  <SubTexture name="menu_btn01" x="1387" y="237" width="120" height="90"/>
+  <SubTexture name="input_field" x="616" y="342" width="663" height="90"/>
+  <SubTexture name="marker_actual" x="1509" y="237" width="8" height="87"/>
+  <SubTexture name="closeState" x="1519" y="237" width="66" height="66"/>
+  <SubTexture name="openState" x="1587" y="237" width="66" height="66"/>
+  <SubTexture name="lh_btn" x="1281" y="342" width="103" height="58"/>
+  <SubTexture name="badge_bg" x="1655" y="237" width="78" height="57"/>
+  <SubTexture name="exclamation_red" x="1386" y="342" width="54" height="48"/>
+  <SubTexture name="exclamation_yellow" x="1442" y="342" width="54" height="48"/>
+  <SubTexture name="info_badge" x="1498" y="342" width="75" height="41"/>
+  <SubTexture name="alert_badge" x="1575" y="342" width="75" height="41"/>
+  <SubTexture name="scrolltop" x="1652" y="342" width="30" height="30"/>
+  <SubTexture name="slider_red" x="616" y="434" width="775" height="30"/>
+  <SubTexture name="slider_red_end" x="1684" y="342" width="20" height="30"/>
+  <SubTexture name="slider_wh" x="616" y="466" width="775" height="30"/>
+  <SubTexture name="slider_wh_end" x="1706" y="342" width="20" height="30"/>
+  <SubTexture name="scrollbottom" x="1281" y="402" width="33" height="30"/>
+  <SubTexture name="slider_bg" x="0" y="503" width="753" height="6"/>
+  <SubTexture name="scrollbody" x="1649" y="223" width="30" height="3"/>
+</TextureAtlas>

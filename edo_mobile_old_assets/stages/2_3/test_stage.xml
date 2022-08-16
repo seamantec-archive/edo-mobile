@@ -1,0 +1,20 @@
+<stage>
+    <width>320</width>
+    <height>480</height>
+    <instrument>
+        <uid>teststage_1</uid>
+        <x>0</x>
+        <y>0</y>
+        <w>160</w>
+        <h>160</h>
+        <type>components.instruments.TrueWindAngle</type>
+    </instrument>
+    <instrument>
+        <uid>teststage_2</uid>
+        <x>160</x>
+        <y>0</y>
+        <w>160</w>
+        <h>160</h>
+        <type>components.instruments.ApparentWindAngle</type>
+    </instrument>
+</stage>

@@ -1,0 +1,397 @@
+﻿package components.instruments {
+
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.sailing.ForgatHandler;
+import com.sailing.Splitter;
+import com.utils.Assets;
+
+import com.sailing.SailData;
+import com.sailing.datas.*;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.minMax.MinMax;
+import com.sailing.units.*;
+import com.utils.Blinker;
+import com.utils.SaveHandler;
+
+import starling.events.TouchEvent;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+import starling.utils.deg2rad;
+import starling.display.Image;
+public class SpeedVessel extends BaseInstrument {
+	private const BEGIN:uint = 30;
+
+    private var _lastVhw:Vhw;
+    private var _lastPAS:PositionAndSpeed;
+
+	public var actualState:String = "";
+    private var forgatHandler:ForgatHandler;
+	private var forgatHandler1:ForgatHandler;
+		
+	private var oneUnit:Number = 300/20;
+
+    private var analog:DynamicSprite;
+    private var analogi:DynamicSprite;
+    private var centerBatch:InstrumentQuadBatcher;
+    private var center:DynamicSprite;
+    private var digitalBackgroundBatch:InstrumentQuadBatcher;
+    private var digitalBackground:DynamicSprite;
+    private var digital:DynamicSprite;
+
+    //display components
+    private var mutato1:Image;
+    private var mutato2:Image;
+    private var szlap_kts:Image;
+    private var szlap_mph:Image;
+    private var szlap_mps:Image;
+    private var szlap_kmph:Image;
+    private var max1:Image;
+    private var min1:Image;
+    private var max2:Image;
+    private var min2:Image;
+    //private var digi1_
+
+	public function SpeedVessel() {
+		super(Assets.getInstrument("speed"));
+
+		minMaxVars["vhw.waterSpeed"] = new MinMax(NaN, NaN, this);
+		minMaxVars["positionandspeed.sog"]  = new MinMax(NaN, NaN, this);
+
+        forgatHandler = new ForgatHandler(mutato1, this, { offsetToZero: BEGIN , min: 210, max: 150 });
+        forgatHandler1 = new ForgatHandler(mutato2, this, { offsetToZero: BEGIN , min: 210, max: 150 });
+
+		setAnalog();
+		this.addEventListener(TouchEvent.TOUCH, digitalis);
+
+        setVhwInvalid();
+        setPositionAndSpeedInvalid();
+
+        uchange();
+	}
+
+    protected override function buildComponents():void {
+        var basic:Texture = Assets.getAtlas("basic_common");
+        var speed:Texture = Assets.getAtlas("speed_common");
+
+        analog = _instrumentAtlas.getComponentAsDynamicSprite(speed, "analog.instance2");
+
+       szlap_kts  = _instrumentAtlas.getComponentAsImageWithParent(speed, "analog.szlap_kts", analog);
+       szlap_mph  = _instrumentAtlas.getComponentAsImageWithParent(speed, "analog.szlap_mph", analog);
+       szlap_mps  = _instrumentAtlas.getComponentAsImageWithParent(speed, "analog.szlap_mps", analog);
+       szlap_kmph = _instrumentAtlas.getComponentAsImageWithParent(speed, "analog.szlap_kmph", analog);
+       mutato2 = _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.mutato2", analog);
+       mutato1 = _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.mutato1", analog);
+       max1 =  _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.max1", analog);
+       min1 =  _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.min1", analog);
+       max2 = _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.max2", analog);
+       min2 = _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.min2", analog);
+
+        center = new DynamicSprite();
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance16", center);
+        _instrumentAtlas.getComponentAsImageWithParent(speed, "analog.instance13", center);
+
+        analogi = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "analog.digi1", analogi, center);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "analog.digi2", analogi, center);
+
+        this.addChild(analog);
+
+        centerBatch = new InstrumentQuadBatcher(analog.width,analog.height, "speedAnalogCenter");
+        centerBatch.addDisplayObject(center);
+        this.addChild(centerBatch.quadBatch);
+
+        this.addChild(analogi);
+
+        digitalBackground = _instrumentAtlas.getComponentAsDynamicSprite(speed, "digital.instance17");
+
+        _instrumentAtlas.getComponentAsImageWithParent(speed, "digital.unit_kts", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(speed, "digital.unit_kmph", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(speed, "digital.unit_mph", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(speed, "digital.unit_mps", digitalBackground);
+
+        digital = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi1", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi2", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimin2", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1, 0xffeea3);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimax2", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1, 0xffeea3);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimin1", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1, 0xffeea3);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimax1", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1, 0xffeea3);
+
+        digitalBackgroundBatch = new InstrumentQuadBatcher(digitalBackground.width,digitalBackground.height, "speedDigitalBackground");
+        digitalBackgroundBatch.addDisplayObject(digitalBackground);
+        this.addChild(digitalBackgroundBatch.quadBatch);
+
+        this.addChild(digital);
+    }
+
+    private function setAnalog():void {
+        analog.visible = true;
+        analogi.visible = true;
+        centerBatch.quadBatch.visible = true;
+
+        digitalBackgroundBatch.quadBatch.visible = false;
+        digital.visible = false;
+    }
+
+    private function setDigital():void {
+        analog.visible = false;
+        analogi.visible = false;
+        centerBatch.quadBatch.visible = false;
+
+        digitalBackgroundBatch.quadBatch.visible = true;
+        digital.visible = true;
+    }
+	
+	private function digitalis(e:TouchEvent):void {
+        if (touchIsEnd(e)) {
+            if (analog.visible) {
+                setDigital();
+                actualState = "digital";
+            } else {
+                setAnalog();
+                actualState = "analog";
+            }
+
+            SaveHandler.instance.setState(_id, actualState);
+        }
+	}
+			
+	private function setState(value:String):void {
+		actualState = value;
+		if(value == "digital") {
+            setDigital();
+		} else if(value == "analog") {
+            setAnalog();
+		}
+	}
+	
+	public override function updateState(stateType:String):void {
+		setState(stateType);
+	}
+	
+	public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        if(datas!=null && datas.vhw.isValid()) {
+            removeVhwBlinker();
+
+            _lastVhw = datas.vhw;
+
+            mutato2.visible = true;
+
+            if(!isNaN((minMaxVars["vhw.waterSpeed"] as MinMax).min)) {
+                min1.visible = true;
+            }
+            if(!isNaN((minMaxVars["vhw.waterSpeed"] as MinMax).max)) {
+                max1.visible = true;
+            }
+
+            forgatHandler1.forgat(datas.vhw.waterSpeed.value*oneUnit, { needTween: needTween });
+
+            analogi["digi1"]["digi_a"].text = Splitter.withValue(datas.vhw.waterSpeed.value).a2;
+            analogi["digi1"]["digi_b"].text = Splitter.instance.b1;
+
+            digital["digi1"]["digi_a"].text = Splitter.withValue(datas.vhw.waterSpeed.value).a3;
+            digital["digi1"]["digi_b"].text = Splitter.instance.b1;
+        }
+
+        if(datas!=null && datas.positionandspeed.isValid()) {
+            removePositionAndSpeedBlinker();
+
+            _lastPAS = datas.positionandspeed;
+
+            mutato2.visible = true;
+
+            if(!isNaN((minMaxVars["positionandspeed.sog"] as MinMax).min)) {
+                min2.visible = true;
+            }
+            if(!isNaN((minMaxVars["positionandspeed.sog"] as MinMax).max)) {
+                max2.visible = true;
+            }
+
+            forgatHandler.forgat(datas.positionandspeed.sog.value*oneUnit, { needTween: needTween });
+
+            analogi["digi2"]["digi_a"].text = Splitter.withValue(datas.positionandspeed.sog.value).a2;
+            analogi["digi2"]["digi_b"].text = Splitter.instance.b1;
+
+            digital["digi2"]["digi_a"].text = Splitter.withValue(datas.positionandspeed.sog.value).a3;
+            digital["digi2"]["digi_b"].text = Splitter.instance.b1;
+        }
+    }
+
+    public override function dataInvalidated(key:String):void{
+        if(key === "vhw") {
+            removeVhwBlinker();
+            mutato2.alpha = 1.0;
+            (minMaxVars["vhw.waterSpeed"] as MinMax).reset((minMaxVars["vhw.waterSpeed"] as MinMax).unitClass);
+            setVhwInvalid();
+        }
+        if(key === "positionandspeed") {
+            removePositionAndSpeedBlinker();
+            mutato1.alpha = 1.0;
+            (minMaxVars["positionandspeed.sog"] as MinMax).reset((minMaxVars["positionandspeed.sog"] as MinMax).unitClass);
+            setPositionAndSpeedInvalid();
+        }
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if(key === "vhw") {
+            mutato2.alpha = 1.0;
+
+            Blinker.addObject(mutato2);
+            Blinker.addObject(analogi["digi1"]["digi_a"]);
+            Blinker.addObject(analogi["digi1"]["digi_b"]);
+            Blinker.addObject(digital["digi1"]["digi_a"]);
+            Blinker.addObject(digital["digi1"]["digi_b"]);
+        }
+        if(key === "positionandspeed") {
+            mutato1.alpha = 1.0;
+
+            Blinker.addObject(mutato1);
+            Blinker.addObject(analogi["digi2"]["digi_a"]);
+            Blinker.addObject(analogi["digi2"]["digi_b"]);
+            Blinker.addObject(digital["digi2"]["digi_a"]);
+            Blinker.addObject(digital["digi2"]["digi_b"]);
+        }
+    }
+
+    private function removeVhwBlinker():void {
+        Blinker.removeObject(mutato2);
+        Blinker.removeObject(analogi["digi1"]["digi_a"]);
+        Blinker.removeObject(analogi["digi1"]["digi_b"]);
+        Blinker.removeObject(digital["digi1"]["digi_a"]);
+        Blinker.removeObject(digital["digi1"]["digi_b"]);
+    }
+
+    private function removePositionAndSpeedBlinker():void {
+        Blinker.removeObject(mutato1);
+        Blinker.removeObject(analogi["digi2"]["digi_a"]);
+        Blinker.removeObject(analogi["digi2"]["digi_b"]);
+        Blinker.removeObject(digital["digi2"]["digi_a"]);
+        Blinker.removeObject(digital["digi2"]["digi_b"]);
+    }
+
+    private function setVhwInvalid():void {
+        _lastVhw = null;
+
+        mutato2.visible = false;
+        if(!(minMaxVars["vhw.waterSpeed"] as MinMax).reseted) {
+            min1.visible = true;
+            max1.visible = true;
+        } else {
+            min1.visible = false;
+            max1.visible = false;
+
+            //digital["digimin1"]["digi_a"].text = "---";
+            //digital["digimin1"]["digi_b"].text = "-";
+            //digital["digimax1"]["digi_a"].text = "---";
+            //digital["digimax1"]["digi_b"].text = "-";
+        }
+
+        //analogi["digi1"]["digi_a"].text = "--";
+        //analogi["digi1"]["digi_b"].text = "-";
+        //digital["digi1"]["digi_a"].text = "---";
+        //digital["digi1"]["digi_b"].text = "-";
+    }
+
+    private function setPositionAndSpeedInvalid():void {
+        _lastPAS = null;
+
+       mutato1.visible = false;
+        if(!(minMaxVars["positionandspeed.sog"] as MinMax).reseted) {
+            min2.visible = true;
+            max2.visible = true;
+        } else {
+            min2.visible = false;
+            max2.visible = false;
+
+            //digital["digimin2"]["digi_a"].text = "---";
+            //digital["digimin2"]["digi_b"].text = "-";
+            //digital["digimax2"]["digi_a"].text = "---";
+            //digital["digimax2"]["digi_b"].text = "-";
+        }
+
+        //analogi["digi2"]["digi_a"].text = "--";
+        //analogi["digi2"]["digi_b"].text = "-";
+        //digital["digi2"]["digi_a"].text = "---";
+        //digital["digi2"]["digi_b"].text = "-";
+    }
+		
+	public override function minMaxChanged():void {
+        var min:Number = (minMaxVars["vhw.waterSpeed"] as MinMax).min;
+        var max:Number = (minMaxVars["vhw.waterSpeed"] as MinMax).max;
+        if(!isNaN(min) && !isNaN(max)) {
+            digital["digimin1"]["digi_a"].text = Splitter.withValue(min).a3;
+            digital["digimin1"]["digi_b"].text = Splitter.instance.b1;
+            digital["digimax1"]["digi_a"].text = Splitter.withValue(max).a3;
+            digital["digimax1"]["digi_b"].text = Splitter.instance.b1;
+
+            min *= oneUnit;
+            if(min<BEGIN) {
+                min1.rotation = deg2rad(BEGIN);
+            } else if(min>180+forgatHandler.max) {
+                min1.rotation = deg2rad(180 + forgatHandler.max);
+            } else {
+                min1.rotation = deg2rad(min + BEGIN);
+            }
+            max *= oneUnit;
+            if(max<BEGIN) {
+                max1.rotation = deg2rad(BEGIN);
+            } else if(max>180+forgatHandler.max) {
+                max1.rotation = deg2rad(180 + forgatHandler.max);
+            } else {
+                max1.rotation = deg2rad(max + BEGIN);
+            }
+        } else {
+            min1.visible = false;
+            max1.visible = false;
+
+            digital["digimin1"]["digi_a"].text = "---";
+            digital["digimin1"]["digi_b"].text = "-";
+            digital["digimax1"]["digi_a"].text = "---";
+            digital["digimax1"]["digi_b"].text = "-";
+        }
+
+        min = (minMaxVars["positionandspeed.sog"] as MinMax).min;
+        max = (minMaxVars["positionandspeed.sog"] as MinMax).max;
+        if(!isNaN(min) && !isNaN(max)) {
+            digital["digimin2"]["digi_a"].text = Splitter.withValue(min).a3;
+            digital["digimin2"]["digi_b"].text = Splitter.instance.b1;
+            digital["digimax2"]["digi_a"].text = Splitter.withValue(max).a3;
+            digital["digimax2"]["digi_b"].text = Splitter.instance.b1;
+
+            min *= oneUnit;
+            if(min<BEGIN) {
+                min2.rotation = deg2rad(BEGIN);
+            } else if(min>180+forgatHandler.max) {
+                min2.rotation = deg2rad(180 + forgatHandler.max);
+            } else {
+                min2.rotation = deg2rad(min + BEGIN);
+            }
+            max *= oneUnit;
+            if(max<BEGIN) {
+                max2.rotation = deg2rad(BEGIN);
+            } else if(max>180+forgatHandler.max) {
+                max2.rotation = deg2rad(180 + forgatHandler.max);
+            } else {
+                max2.rotation = deg2rad(max + BEGIN);
+            }
+        } else {
+            min2.visible = false;
+            max2.visible = false;
+
+            digital["digimin2"]["digi_a"].text = "---";
+            digital["digimin2"]["digi_b"].text = "-";
+            digital["digimax2"]["digi_a"].text = "---";
+            digital["digimax2"]["digi_b"].text = "-";
+        }
+    }
+		
+	public override function unitChanged():void{
+		uchange();
+	}
+
+	private function uchange():void{
+     }
+}
+}

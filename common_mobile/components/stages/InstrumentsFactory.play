@@ -1,0 +1,24 @@
+﻿package components.stages{
+	import components.instruments.*;
+	import com.sailing.instruments.BaseInstrument;
+	#if PLATFORM_MONOTOUCH
+		import Foundation.*;
+	#endif
+
+
+	#if PLATFORM_MONOTOUCH
+		[Preserve (AllMembers = true)]
+	#endif
+	public class InstrumentsFactory {
+
+		public static function getInstrumentByName(name:String):BaseInstrument{
+			switch(name){
+				case "components.instruments.SpeedVessel":
+					return new SpeedVessel;
+
+			}
+			return null;
+
+		}
+	}
+}

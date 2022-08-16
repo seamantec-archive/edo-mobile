@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<InstrumentAtlas>
+  <SubTexture name="digital" x="-1" y="-1" width="400" height="200" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="200" visible="true" color="0">
+    <SubTexture name="digimin1" x="-1" y="-1" width="275" height="127" pivotX="127" pivotY="154" originX="66" originY="124" originWidth="82" originHeight="37" visible="true" color="0">
+      <TextField name="digi_a" font="DigitalEDOpr" x="0" y="0" width="221" height="123" pivotX="1" pivotY="1" size="109" bold="false" italic="false" color="16777215" defaultText="---"/>
+      <SubTexture name="instance6" x="364" y="153" width="13" height="13" pivotX="0" pivotY="0" originX="210" originY="106" originWidth="12" originHeight="12" visible="true" color="0"/>
+      <SubTexture name="instance5" x="173" y="182" width="258" height="112" pivotX="120" pivotY="148" originX="127" originY="154" originWidth="257" originHeight="111" visible="true" color="0"/>
+      <TextField name="digi_b" font="DigitalEDOpr" x="220" y="42" width="53" height="83" pivotX="1" pivotY="1" size="74" bold="false" italic="false" color="16777215" defaultText="-"/>
+    </SubTexture>
+    <TextField name="unit" font="Amble Bold" x="288" y="58" width="89" height="39" pivotX="1" pivotY="1" size="35" bold="false" italic="false" color="0" defaultText="km/h"/>
+    <TextField name="label1" font="Amble Bold" x="21" y="9" width="318" height="31" pivotX="1" pivotY="1" size="27" bold="false" italic="false" color="16777215" defaultText="AWA"/>
+    <SubTexture name="instance2" x="0" y="0" width="400" height="200" pivotX="200" pivotY="200" originX="200" originY="200" originWidth="400" originHeight="200" visible="true" color="0">
+      <SubTexture name="instance3" x="-1" y="-1" width="400" height="200" pivotX="200" pivotY="200" originX="0" originY="0" originWidth="400" originHeight="200" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="digimax1" x="-1" y="-1" width="275" height="127" pivotX="127" pivotY="154" originX="66" originY="183" originWidth="82" originHeight="37" visible="true" color="0">
+      <SubTexture name="instance7" x="173" y="182" width="258" height="112" pivotX="120" pivotY="148" originX="127" originY="154" originWidth="257" originHeight="111" visible="true" color="0"/>
+      <TextField name="digi_a" font="DigitalEDOpr" x="0" y="0" width="221" height="123" pivotX="1" pivotY="1" size="109" bold="false" italic="false" color="16777215" defaultText="---"/>
+      <SubTexture name="instance8" x="364" y="153" width="13" height="13" pivotX="0" pivotY="0" originX="210" originY="106" originWidth="12" originHeight="12" visible="true" color="0"/>
+      <TextField name="digi_b" font="DigitalEDOpr" x="220" y="42" width="53" height="83" pivotX="1" pivotY="1" size="74" bold="false" italic="false" color="16777215" defaultText="-"/>
+    </SubTexture>
+    <SubTexture name="instance15" x="-1" y="-1" width="379" height="150" pivotX="0" pivotY="0" originX="15" originY="47" originWidth="379" originHeight="150" visible="false" color="0">
+      <SubTexture name="instance19" x="-1" y="-1" width="379" height="30" pivotX="0" pivotY="0" originX="0" originY="90" originWidth="379" originHeight="30" visible="true" color="0">
+        <TextField name="instance762" font="ArialX" x="1" y="0" width="377" height="30" pivotX="0" pivotY="0" size="26" bold="true" italic="false" color="0" defaultText="TWA"/>
+      </SubTexture>
+      <SubTexture name="instance21" x="-1" y="-1" width="9" height="33" pivotX="0" pivotY="0" originX="368" originY="0" originWidth="9" originHeight="32" visible="true" color="0"/>
+      <SubTexture name="instance17" x="-1" y="-1" width="379" height="30" pivotX="0" pivotY="0" originX="0" originY="30" originWidth="379" originHeight="30" visible="true" color="0">
+        <TextField name="instance758" font="ArialX" x="1" y="0" width="377" height="30" pivotX="0" pivotY="0" size="26" bold="true" italic="false" color="0" defaultText="AWD"/>
+      </SubTexture>
+      <SubTexture name="instance16" x="-1" y="-1" width="379" height="30" pivotX="0" pivotY="0" originX="0" originY="0" originWidth="379" originHeight="30" visible="true" color="0">
+        <TextField name="instance756" font="ArialX" x="1" y="0" width="377" height="30" pivotX="0" pivotY="0" size="26" bold="true" italic="false" color="0" defaultText="AWA"/>
+      </SubTexture>
+      <SubTexture name="instance18" x="-1" y="-1" width="379" height="30" pivotX="0" pivotY="0" originX="0" originY="60" originWidth="379" originHeight="30" visible="true" color="0">
+        <TextField name="instance760" font="ArialX" x="1" y="0" width="377" height="30" pivotX="0" pivotY="0" size="26" bold="true" italic="false" color="0" defaultText="AWS"/>
+      </SubTexture>
+      <SubTexture name="instance20" x="-1" y="-1" width="379" height="30" pivotX="0" pivotY="0" originX="0" originY="120" originWidth="379" originHeight="30" visible="true" color="0">
+        <TextField name="instance764" font="ArialX" x="1" y="0" width="377" height="30" pivotX="0" pivotY="0" size="26" bold="true" italic="false" color="0" defaultText="TWD"/>
+      </SubTexture>
+    </SubTexture>
+    <SubTexture name="digi1" x="-1" y="-1" width="275" height="127" pivotX="127" pivotY="154" originX="219" originY="200" originWidth="219" originHeight="100" visible="true" color="0">
+      <SubTexture name="instance9" x="173" y="182" width="258" height="112" pivotX="120" pivotY="148" originX="127" originY="154" originWidth="257" originHeight="111" visible="true" color="0"/>
+      <SubTexture name="instance10" x="364" y="153" width="13" height="13" pivotX="0" pivotY="0" originX="210" originY="106" originWidth="12" originHeight="12" visible="true" color="0"/>
+      <TextField name="digi_a" font="DigitalEDOpr" x="0" y="0" width="221" height="123" pivotX="1" pivotY="1" size="109" bold="false" italic="false" color="16777215" defaultText="---"/>
+      <TextField name="digi_b" font="DigitalEDOpr" x="220" y="42" width="53" height="83" pivotX="1" pivotY="1" size="74" bold="false" italic="false" color="16777215" defaultText="-"/>
+    </SubTexture>
+    <SubTexture name="degree_s" x="258" y="1069" width="92" height="32" pivotX="-88" pivotY="35" originX="198" originY="101" originWidth="91" originHeight="31" visible="false" color="0">
+      <SubTexture name="instance12" x="-1" y="-1" width="21" height="21" pivotX="-88" pivotY="30" originX="-88" originY="35" originWidth="20" originHeight="20" visible="true" color="0"/>
+      <TextField name="instance749" font="Amble Bold" x="22" y="0" width="69" height="31" pivotX="1" pivotY="1" size="27" bold="false" italic="false" color="0" defaultText="STBD&#xD;"/>
+    </SubTexture>
+    <SubTexture name="selector" x="0" y="1306" width="378" height="40" pivotX="4" pivotY="2" originX="15" originY="7" originWidth="377" originHeight="40" visible="true" color="0">
+      <SubTexture name="instance4" x="-1" y="-1" width="378" height="40" pivotX="4" pivotY="2" originX="4" originY="2" originWidth="377" originHeight="40" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="degree_p" x="258" y="1069" width="92" height="32" pivotX="-88" pivotY="35" originX="198" originY="101" originWidth="93" originHeight="31" visible="false" color="0">
+      <SubTexture name="instance13" x="-1" y="-1" width="21" height="21" pivotX="-88" pivotY="30" originX="-88" originY="35" originWidth="20" originHeight="20" visible="true" color="0"/>
+      <TextField name="instance751" font="Amble Bold" x="22" y="0" width="71" height="31" pivotX="1" pivotY="1" size="27" bold="false" italic="false" color="0" defaultText="PORT&#xD;"/>
+    </SubTexture>
+    <SubTexture name="degree" x="400" y="64" width="21" height="21" pivotX="-88" pivotY="30" originX="198" originY="101" originWidth="20" originHeight="20" visible="false" color="0">
+      <SubTexture name="instance11" x="-1" y="-1" width="21" height="21" pivotX="-88" pivotY="30" originX="-88" originY="30" originWidth="20" originHeight="20" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance14" x="0" y="1224" width="355" height="82" pivotX="177" pivotY="147" originX="200" originY="200" originWidth="355" originHeight="81" visible="true" color="0"/>
+  </SubTexture>
+</InstrumentAtlas>

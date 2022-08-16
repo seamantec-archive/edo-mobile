@@ -1,0 +1,645 @@
+/**
+ * Created by seamantec on 10/11/14.
+ */
+package components.instruments {
+import com.common.AppProperties;
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.sailing.ForgatHandler;
+import com.sailing.SailData;
+import com.sailing.Splitter;
+import com.sailing.datas.Bwc;
+import com.sailing.datas.CrossTrack;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.units.Unit;
+import com.utils.Assets;
+import com.utils.Blinker;
+import com.utils.SaveHandler;
+
+import starling.events.TouchEvent;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+import starling.utils.deg2rad;
+
+public class WaypointHU extends BaseInstrument {
+
+    private var _BOATX:Number;
+    private var _BOATY:Number;
+    private const XTE_WIDTH_IN_NM:Number = 0.161987; // 300m in NM
+    private const XTE_WIDTH_IN_PIXEL:int = 117/AppProperties.screenScaleRatio;
+    private const XTE_HEIGHT_IN_PIXEL:int = 12/AppProperties.screenScaleRatio;
+    private const XTE_END_ANGLE:Number = 50;
+
+    private var _lastBwc:Bwc;
+    private var _lastCT:CrossTrack;
+
+    private var _isCourseValid:Boolean = false;
+    private var _isBearingValid:Boolean = false;
+    private var _isCTValid:Boolean = false;
+
+    public var actualState:String = "";
+
+    private var _headingHandler:ForgatHandler;
+    private var _courseHandler:ForgatHandler;
+    private var _bearingHandler:ForgatHandler;
+
+    private var _isHeading:Boolean;
+    private var _isPAS:Boolean;
+    private var _isBwc:Boolean;
+    private var _isCT:Boolean;
+    private var _isEta:Boolean;
+
+    private var background:DynamicSprite;
+    private var analog:DynamicSprite;
+    private var boat:DynamicSprite;
+    private var course:DynamicSprite;
+    private var center:DynamicSprite;
+    private var centerBatch:InstrumentQuadBatcher;
+    private var digitalBackgroundBatch:InstrumentQuadBatcher;
+    private var digitalBackground:DynamicSprite;
+    private var digital:DynamicSprite;
+
+    public function WaypointHU() {
+        super(Assets.getInstrument("waypoint_hu"));
+
+        _headingHandler = new ForgatHandler(background["forgo"], this);
+        _courseHandler = new ForgatHandler(course, this);
+        _bearingHandler = new ForgatHandler(background["WPT"], this);
+
+        setAnalog();
+        this.addEventListener(TouchEvent.TOUCH, digitalis);
+
+        uchange();
+        setHeadingInvalid();
+        setPASInvalid();
+        setBwcInvalid();
+        setEtaInvalid();
+        setCTInvalid();
+
+        _BOATX = boat.x;
+        _BOATY = boat.y;
+    }
+
+    protected override function buildComponents():void {
+        var basic:Texture = Assets.getAtlas("basic_common");
+        var waypoint:Texture = Assets.getAtlas("waypoint_common");
+
+        background = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "analog.instance2");
+
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.forgo", background, true);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.WPT", background, true);
+
+        center = new DynamicSprite();
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.instance4", center);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.instance6", center);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.instance9", center);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance14", center);
+
+        analog = new DynamicSprite();
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.dtw_unit", analog, VAlign.TOP,HAlign.LEFT, 1.3);
+        analog["dtw_unit"].y -= analog["dtw_unit"].height/4 + 2;
+        analog["dtw_unit"].width *= 1.5;
+        analog["dtw_unit"].height *= 1.5;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "analog.dtw_value", analog, center, VAlign.CENTER,HAlign.RIGHT, .87);
+        analog["dtw_value"]["digi_a"].y -= 5;
+        analog["dtw_value"]["digi_b"].y -= 3;
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.ketto_a", analog, VAlign.CENTER,HAlign.RIGHT);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.ketto_b", analog, VAlign.CENTER,HAlign.RIGHT);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.ketto_c", analog, VAlign.CENTER,HAlign.RIGHT);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.harom_a", center, VAlign.TOP,HAlign.CENTER, 1.35);
+        center["harom_a"].x -= center["harom_a"].width/2;
+        center["harom_a"].y -= center["harom_a"].height/4;
+        center["harom_a"].width *= 2;
+        center["harom_a"].height *= 1.5;
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.harom_b", center, VAlign.TOP,HAlign.CENTER, 1.35);
+        center["harom_b"].x -= center["harom_a"].width/2;
+        center["harom_b"].y -= center["harom_a"].height/4;
+        center["harom_b"].width *= 1.5;
+        center["harom_b"].height *= 1.5;
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.harom_c", center, VAlign.TOP,HAlign.CENTER, 1.35);
+        center["harom_c"].x -= center["harom_a"].width/2;
+        center["harom_c"].y -= center["harom_a"].height/4;
+        center["harom_c"].width *= 1.5;
+        center["harom_c"].height *= 1.5;
+
+        boat = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "analog.boat", false, false);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.boat.boatc", boat);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.boat.course", boat);
+        analog.addChild(boat);
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("analog.wpname", analog, VAlign.CENTER,HAlign.CENTER, 1.45);
+        analog["wpname"].x -= analog["wpname"].width/4;
+        analog["wpname"].width *= 1.5;
+        analog["wpname"].height *= 1.5;
+
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.steer_left", analog, true);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.steer_right", analog, true);
+
+        course = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "analog.course", false, false);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "analog.course.course_vissza", course);
+        analog.addChild(course);
+
+        this.addChild(background);
+
+        centerBatch = new InstrumentQuadBatcher(background.width,background.height);
+        centerBatch.addDisplayObject(center);
+        this.addChild(centerBatch.quadBatch);
+
+        this.addChild(analog);
+
+        digitalBackground = _instrumentAtlas.getComponentAsDynamicSprite(waypoint, "digital.instance17");
+
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "digital.instance19", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(waypoint, "digital.instance29", digitalBackground);
+
+        digital = new DynamicSprite();
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.wpname", digital);
+
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.distanceto", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.bearing", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.day", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.06);
+        digital["day"]["digi_a"].y += 1;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.hour", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.06);
+        digital["hour"]["digi_a"].y += 1;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.minute", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.06);
+        digital["minute"]["digi_a"].y += 1;
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.rbearing", digital, digitalBackground);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.xte_a", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.02);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.xte_b", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.02);
+
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.distance_unit", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.time_a", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.time_b", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.time_c", digitalBackground);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.side", digital);
+        _instrumentAtlas.getComponentAsTextFieldWithParent("digital.ct_unit", digitalBackground);
+
+        digitalBackgroundBatch = new InstrumentQuadBatcher(digitalBackground.width,digitalBackground.height, "waypointDigitalBackground");
+        digitalBackgroundBatch.addDisplayObject(digitalBackground);
+        this.addChild(digitalBackgroundBatch.quadBatch);
+
+        this.addChild(digital);
+    }
+
+    private function setAnalog():void {
+        background.visible = true;
+        analog.visible = true;
+        centerBatch.quadBatch.visible = true;
+
+        digitalBackgroundBatch.quadBatch.visible = false;
+        digital.visible = false;
+    }
+
+    private function setDigital():void {
+        background.visible = false;
+        analog.visible = false;
+        centerBatch.quadBatch.visible = false;
+
+        digitalBackgroundBatch.quadBatch.visible = true;
+        digital.visible = true;
+    }
+
+    private function digitalis(e:TouchEvent):void {
+        if (touchIsEnd(e)) {
+            if (analog.visible) {
+                setDigital();
+                actualState = "digital";
+            } else {
+                setAnalog();
+                actualState = "analog";
+            }
+
+            SaveHandler.instance.setState(_id, actualState);
+        }
+    }
+
+    private function setState(value:String):void {
+        actualState = value;
+        if (value == "digital") {
+            setDigital();
+        } else if (value == "analog") {
+            setAnalog();
+        }
+    }
+
+    public override function updateState(stateType:String):void {
+        setState(stateType);
+    }
+
+    public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        _isHeading = datas!=null && datas.heading.isValid();
+        _isPAS = datas!=null && datas.positionandspeed.isValid();
+        _isBwc = datas!=null && datas.bwc.isValid();
+        _isCT = datas!=null && datas.crosstrack.isValid();
+        _isEta = datas!=null && datas.eta.isValid();
+
+        if(_isHeading) {
+            Blinker.removeObject(background["forgo"]);
+
+            background["forgo"].visible = true;
+
+            _headingHandler.forgat(0 - datas.heading.heading.value, { needTween: needTween });
+
+            if(_isPAS) {
+                Blinker.removeObject(course);
+
+                course.visible = true;
+                _isCourseValid = true;
+
+                var courseValue:Number = to180(to180(datas.positionandspeed.cog.value) - to180(datas.heading.heading.value));
+                _courseHandler.forgat(courseValue, { needTween: needTween });
+                course["course_vissza"].rotation = -deg2rad(courseValue);
+                boat["course"].rotation = deg2rad(courseValue);
+            }
+
+            if(_isBwc) {
+                Blinker.removeObject(background["WPT"]);
+
+                background["WPT"].visible = true;
+                _isBearingValid = true;
+
+                _bearingHandler.forgat(datas.bwc.waypointBearing.value - datas.heading.heading.value, { needTween: needTween });
+
+                removeRBearingBlinker();
+
+                var rbearing:Number = to180(to180(datas.bwc.waypointBearing.value) - to180(datas.heading.heading.value));
+                rbearing = Math.round(rbearing);
+                digital["rbearing"]["digi_a"].text = Splitter.withValue(Math.abs(rbearing)).a3;
+
+                if(rbearing<=(-1)) {
+                    digital["side"].text = "L";
+                } else if(rbearing>=1) {
+                    digital["side"].text = "R";
+                } else {
+                    digital["side"].text = "";
+                }
+
+                if(_isCT) {
+                    if(datas.crosstrack.crossTrackError.getPureData()==Unit.INVALID_VALUE || datas.crosstrack.directionToSteer=="") {
+                        Blinker.removeObject(boat);
+                        boat.visible = false;
+                        _isCTValid = false;
+                    } else {
+                        var cte:Number = Math.abs(datas.crosstrack.crossTrackError.getPureData());
+                        if(datas.crosstrack.directionToSteer=="R") {
+                            cte *= -1;
+                        }
+                        boat.x = _BOATX + (cte / XTE_WIDTH_IN_NM) * XTE_WIDTH_IN_PIXEL;
+                        if (boat.x > (_BOATX + XTE_WIDTH_IN_PIXEL)) {
+                            boat.x = _BOATX + XTE_WIDTH_IN_PIXEL;
+                            Blinker.addObject(boat);
+                            _isCTValid = false;
+                        } else if (boat.x < (_BOATX - XTE_WIDTH_IN_PIXEL)) {
+                            boat.x = _BOATX - XTE_WIDTH_IN_PIXEL;
+                            Blinker.addObject(boat);
+                            _isCTValid = false;
+                        } else {
+                            Blinker.removeObject(boat);
+                            boat.visible = true;
+                            _isCTValid = true;
+                        }
+                        boat.y = _BOATY - (Math.abs(_BOATX - boat.x) / XTE_WIDTH_IN_PIXEL) * XTE_HEIGHT_IN_PIXEL;
+                        boat.rotation = deg2rad(0 - rbearing - (((_BOATX - boat.x) / XTE_WIDTH_IN_PIXEL) * (-1) * XTE_END_ANGLE));
+                    }
+                }
+            }
+        }
+
+        if(_isBwc) {
+            removeBwcBlinker();
+            _lastBwc = datas.bwc;
+
+            analog["wpname"].text = datas.bwc.waypointId;
+            digital["wpname"].text = datas.bwc.waypointId;
+
+            analog["dtw_value"]["digi_a"].text = Splitter.withValue(datas.bwc.waypointDistance.getDynamicValue()).a4;
+            analog["dtw_value"]["digi_b"].text = Splitter.instance.b1;
+            analog["dtw_unit"].text = datas.bwc.waypointDistance.getDynamicShortString();
+
+            digital["distanceto"]["digi_a"].text = Splitter.withValue(datas.bwc.waypointDistance.getDynamicValue()).a4;
+            digital["distanceto"]["digi_b"].text = Splitter.instance.b1;
+            if(digitalBackground["distance_unit"]!=datas.bwc.waypointDistance.getDynamicShortString()) {
+                digitalBackground["distance_unit"].text = datas.bwc.waypointDistance.getDynamicShortString();
+                digitalBackgroundBatch.render();
+            }
+
+            digital["bearing"]["digi_a"].text = Splitter.withValue(datas.bwc.waypointBearing.value).a3;
+        }
+
+        if(_isEta) {
+            removeEtaBlinker();
+
+            var eta:Number = datas.eta.eta;
+            var hour:Number = Math.floor(eta/3600);
+            if(hour>=24) {
+                if(digitalBackground["time_a"].text!="d" && digitalBackground["time_b"].text!="h" && digitalBackground["time_c"].text!="m") {
+                    digitalBackground["time_a"].text = "d";
+                    digitalBackground["time_b"].text = "h";
+                    digitalBackground["time_c"].text = "m";
+                    digitalBackgroundBatch.render();
+                }
+                if(center["harom_a"].text!="d" && center["harom_b"].text!="h" && center["harom_c"].text!="m") {
+                    center["harom_a"].text = "d";
+                    center["harom_b"].text = "h";
+                    center["harom_c"].text = "m";
+                    centerBatch.render();
+                }
+                var day:Number = Math.floor(hour/24);
+                analog["ketto_a"].text = toTime(day);
+                digital["day"]["digi_a"].text = toTime(day);
+                eta -= (day*24*3600);
+                hour = Math.floor(eta/3600);
+                analog["ketto_b"].text = toTime(hour);
+                digital["hour"]["digi_a"].text = toTime(hour);
+                eta -= (hour*3600);
+                analog["ketto_c"].text = toTime(Math.floor(eta/60));
+                digital["minute"]["digi_a"].text = toTime(Math.floor(eta/60));
+            } else {
+                if(digitalBackground["time_a"].text!="h" && digitalBackground["time_b"].text!="m" && digitalBackground["time_c"].text!="s") {
+                    digitalBackground["time_a"].text = "h";
+                    digitalBackground["time_b"].text = "m";
+                    digitalBackground["time_c"].text = "s";
+                    digitalBackgroundBatch.render();
+                }
+                if(center["harom_a"].text!="h" && center["harom_b"].text!="m" && center["harom_c"].text!="s") {
+                    center["harom_a"].text = "h";
+                    center["harom_b"].text = "m";
+                    center["harom_c"].text = "s";
+                    centerBatch.render();
+                }
+                analog["ketto_a"].text = toTime(hour);
+                digital["day"]["digi_a"].text = toTime(hour);
+                eta -= (hour*3600);
+                var minute:Number = Math.floor(eta/60);
+                analog["ketto_b"].text = toTime(minute);
+                digital["hour"]["digi_a"].text = toTime(minute);
+                eta -= (minute*60);
+                analog["ketto_c"].text = toTime(Math.floor(eta));
+                digital["minute"]["digi_a"].text = toTime(Math.floor(eta));
+            }
+        }
+
+        if(_isCT) {
+            removeCTBlinker();
+            _lastCT = datas.crosstrack;
+
+            if(datas.crosstrack.crossTrackError.getDynamicValue()!=Unit.INVALID_VALUE) {
+                digital["xte_a"]["digi_a"].text = Splitter.withValue(datas.crosstrack.crossTrackError.getDynamicValue()).a4;
+                digital["xte_b"]["digi_a"].text = Splitter.instance.b2;
+            } else {
+                digital["xte_a"]["digi_a"].text = "----";
+                digital["xte_b"]["digi_a"].text = "--";
+            }
+
+            if(digitalBackground["ct_unit"]!=datas.crosstrack.crossTrackError.getDynamicShortString()) {
+                digitalBackground["ct_unit"].text = datas.crosstrack.crossTrackError.getDynamicShortString();
+                digitalBackgroundBatch.render();
+            }
+
+            analog["steer_right"].visible = false;
+            analog["steer_left"].visible = false;
+            if(datas.crosstrack.directionToSteer=="R") {
+                analog["steer_right"].visible = true;
+            } else if(datas.crosstrack.directionToSteer=="L") {
+                analog["steer_left"].visible = true;
+            }
+        }
+    }
+
+    public override function dataInvalidated(key:String):void {
+        if(key == "heading") {
+            removeRBearingBlinker();
+            setHeadingInvalid();
+        }
+        if(key == "positionandspeed") {
+            Blinker.removeObject(course);
+            setPASInvalid();
+        }
+        if(key == "bwc") {
+            removeBwcBlinker();
+            removeRBearingBlinker();
+            setBwcInvalid();
+        }
+        if(key == "eta") {
+            removeEtaBlinker();
+            setEtaInvalid();
+        }
+        if(key == "crosstrack") {
+            removeCTBlinker();
+            setCTInvalid();
+        }
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if(key == "heading") {
+            Blinker.addObject(background["forgo"]);
+
+            if(_isCourseValid) {
+                Blinker.addObject(course);
+                _isCourseValid = false;
+            }
+            if(_isBearingValid) {
+                Blinker.addObject(analog["WPT"]);
+                _isBearingValid = false;
+            }
+
+            if(digital["rbearing"]["digi_a"].text!="---") {
+                Blinker.addObject(digital["rbearing"]["digi_a"]);
+                Blinker.addObject(digital["side"]);
+            }
+        }
+        if(key == "positionandspeed") {
+            if(_isCourseValid) {
+                Blinker.addObject(course);
+                _isCourseValid = false;
+            }
+        }
+        if(key == "bwc") {
+            if(_isBearingValid) {
+                Blinker.addObject(background["WPT"]);
+                _isBearingValid = false;
+            }
+            Blinker.addObject(analog["wpname"]);
+            Blinker.addObject(digital["wpname"]);
+
+            Blinker.addObject(analog["dtw_value"]["digi_a"]);
+            Blinker.addObject(analog["dtw_value"]["digi_b"]);
+            Blinker.addObject(digital["distanceto"]["digi_a"]);
+            Blinker.addObject(digital["distanceto"]["digi_b"]);
+
+            Blinker.addObject(digital["bearing"]["digi_a"]);
+
+            if(digital["rbearing"]["digi_a"].text!="---") {
+                Blinker.addObject(digital["rbearing"]["digi_a"]);
+                Blinker.addObject(digital["side"]);
+            }
+        }
+        if(key == "eta") {
+            Blinker.addObject(analog.ketto_a);
+            Blinker.addObject(digital.day["digi_a"]);
+            Blinker.addObject(analog.ketto_b);
+            Blinker.addObject(digital.hour["digi_a"]);
+            Blinker.addObject(analog.ketto_c);
+            Blinker.addObject(digital.minute["digi_a"]);
+        }
+        if(key == "crosstrack") {
+            Blinker.addObject(boat);
+            _isCTValid = true;
+
+            Blinker.addObject(digital["xte_a"]["digi_a"]);
+            Blinker.addObject(digital["xte_b"]["digi_a"]);
+        }
+    }
+
+    public override function unitChanged():void {
+        uchange();
+    }
+
+    public override function minMaxChanged():void {
+    }
+
+    private function setHeadingInvalid():void {
+        Blinker.removeObject(background["forgo"]);
+        Blinker.removeObject(course);
+        Blinker.removeObject(background["WPT"]);
+        background["forgo"].visible = false;
+        course.visible = false;
+        background["WPT"].visible = false;
+
+        digital["rbearing"]["digi_a"].text = "---";
+        digital["side"].text = "";
+    }
+
+    private function setPASInvalid():void {
+        Blinker.removeObject(course);
+        course.visible = false;
+
+        _isCourseValid = false;
+    }
+
+    private function setBwcInvalid():void {
+        _lastBwc = null;
+
+        _isBearingValid = false;
+
+        analog["wpname"].text = "NO WAYPOINT";
+        digital["wpname"].text = "NO WAYPOINT";
+
+        analog["dtw_value"]["digi_a"].text = "----";
+        analog["dtw_value"]["digi_b"].text = "--";
+        digital["distanceto"]["digi_a"].text = "----";
+        digital["distanceto"]["digi_b"].text = "-";
+
+        digital["bearing"]["digi_a"].text = "---";
+
+        digital["rbearing"]["digi_a"].text = "---";
+        digital["side"].text = "";
+    }
+
+    private function removeBwcBlinker():void {
+        if(_isBearingValid) {
+            Blinker.removeObject(background["WPT"]);
+        }
+        Blinker.removeObject(analog["wpname"]);
+        Blinker.removeObject(digital["wpname"]);
+
+        Blinker.removeObject(analog["dtw_value"]["digi_a"]);
+        Blinker.removeObject(analog["dtw_value"]["digi_b"]);
+        Blinker.removeObject(digital["distanceto"]["digi_a"]);
+        Blinker.removeObject(digital["distanceto"]["digi_b"]);
+
+        Blinker.removeObject(digital["bearing"]["digi_a"]);
+    }
+
+    private function removeRBearingBlinker():void {
+        Blinker.removeObject(digital["rbearing"]["digi_a"]);
+        Blinker.removeObject(digital["side"]);
+    }
+
+    private function setEtaInvalid():void {
+        center["harom_a"].text = "";
+        digitalBackground["time_a"].text = "";
+        center["harom_b"].text = "";
+        digitalBackground["time_b"].text = "";
+        center["harom_c"].text = "";
+        digitalBackground["time_c"].text = "";
+        analog["ketto_a"].text = "--";
+        digital["day"]["digi_a"].text = "--";
+        analog["ketto_b"].text = "--";
+        digital["hour"]["digi_a"].text = "--";
+        analog["ketto_c"].text = "--";
+        digital["minute"]["digi_a"].text = "--";
+
+        centerBatch.render();
+        digitalBackgroundBatch.render();
+    }
+
+    private function removeEtaBlinker():void {
+        Blinker.removeObject(analog["ketto_a"]);
+        Blinker.removeObject(digital["day"]["digi_a"]);
+        Blinker.removeObject(analog["ketto_b"]);
+        Blinker.removeObject(digital["hour"]["digi_a"]);
+        Blinker.removeObject(analog["ketto_c"]);
+        Blinker.removeObject(digital["minute"]["digi_a"]);
+    }
+
+    private function setCTInvalid():void {
+        _lastCT = null;
+        _isCTValid = false;
+
+        Blinker.removeObject(boat);
+        boat.visible = false;
+
+        digital["xte_a"]["digi_a"].text = "----";
+        digital["xte_b"]["digi_a"].text = "--";
+
+        analog["steer_right"].visible = false;
+        analog["steer_left"].visible = false;
+    }
+
+    private function removeCTBlinker():void {
+        if(_isCTValid) {
+            Blinker.removeObject(boat);
+        }
+        Blinker.removeObject(digital["xte_a"]["digi_a"]);
+        Blinker.removeObject(digital["xte_b"]["digi_a"]);
+    }
+
+    private function uchange():void {
+        if(_lastBwc!=null) {
+            analog["dtw_value"]["digi_a"].text = Splitter.withValue(_lastBwc.waypointDistance.value).a4;
+            analog["dtw_value"]["digi_b"].text = Splitter.instance.b1;
+
+            analog["dtw_unit"].text = _lastBwc.waypointDistance.getDynamicShortString();
+
+            digital["distanceto"]["digi_a"].text = Splitter.withValue(_lastBwc.waypointDistance.value).a4;
+            digital["distanceto"]["digi_b"].text = Splitter.instance.b1;
+
+            digitalBackground["distance_unit"].text = _lastBwc.waypointDistance.getDynamicShortString();
+        }
+        if(_lastCT!=null) {
+            if(_lastCT.crossTrackError.getDynamicValue()!=Unit.INVALID_VALUE) {
+                digital["xte_a"]["digi_a"].text = Splitter.withValue(_lastCT.crossTrackError.getDynamicValue()).a4;
+                digital["xte_b"]["digi_a"].text = Splitter.instance.b2;
+            } else {
+                digital["xte_a"]["digi_a"].text = "----";
+                digital["xte_b"]["digi_a"].text = "--";
+            }
+
+            digitalBackground["ct_unit"].text = _lastCT.crossTrackError.getUnitShortString();
+        }
+
+        digitalBackgroundBatch.render();
+    }
+
+    private function toTime(n:Number):String {
+        return Splitter.withValue(n).a02;
+    }
+
+    private function to180(value:Number):Number {
+        return (value>180) ? (value - 360) : value;
+    }
+}
+}

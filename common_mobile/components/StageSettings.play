@@ -1,0 +1,57 @@
+/**
+ * Created by seamantec on 24/09/14.
+ */
+package components {
+import com.utils.FontFactory;
+
+import components.lists.List;
+import components.lists.ListItem;
+import components.stages.messages.MessagesListItem;
+
+import starling.display.Sprite;
+import starling.events.Event;
+import starling.text.TextField;
+
+public class StageSettings extends Sprite {
+
+    private static const HEIGHT:Number = MessagesListItem.HEIGHT;
+
+    private static var _label:TextField;
+    private static var _stages:List;
+
+    public function StageSettings() {
+        super();
+        this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
+    }
+
+    private function addedToStageHandler(e:Event):void {
+        if (_label == null) {
+            _label = FontFactory.getWhiteCenterFont(EdoMobile.menu.width, 20, 14);
+            _label.text = "Stages";
+            _label.x = 0;
+            _label.y = 0;
+            this.addChild(_label);
+        }
+        if(_stages==null) {
+            _stages = new List(0,22, EdoMobile.menu.width,EdoMobile.stageContainer.length*HEIGHT, 0x656565,1);
+            _stages.scrollable = false;
+            var item:ListItem;
+            for(var i:int=0; i<EdoMobile.stageContainer.length; i++) {
+                item = new ListItem(EdoMobile.menu.width,HEIGHT, 0x656565,1);
+                item.addLabel(EdoMobile.stageContainer.getTitle(i), FontFactory.getWhiteLeftFont(EdoMobile.menu.width,HEIGHT, 14));
+                item.addTouchCallback(onTouchCallback, i);
+                _stages.addItem(item);
+            }
+            this.addChild(_stages);
+        }
+    }
+
+    private function onTouchCallback(index:int):void {
+        _stages.getItem(EdoMobile.stageContainer.active.stageIndex).backgroundColor = 0x656565;
+        _stages.getItem(index).backgroundColor = 0x7b7b7b;
+        EdoMobile.stageContainer.setActiveStageFromMenu(index);
+    }
+
+
+}
+}

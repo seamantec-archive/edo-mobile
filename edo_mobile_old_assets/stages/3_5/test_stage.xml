@@ -1,0 +1,25 @@
+<stage>
+    <width>240</width>
+    <height>400</height>
+    <instrument>
+        <x>0</x>
+        <y>0</y>
+        <w>120</w>
+        <h>120</h>
+        <type>components.instruments.Compass</type>
+    </instrument>
+    <instrument>
+        <x>120</x>
+        <y>0</y>
+        <w>120</w>
+        <h>120</h>
+        <type>components.instruments.SpeedVessel</type>
+    </instrument>
+    <instrument>
+        <x>0</x>
+        <y>120</y>
+        <w>240</w>
+        <h>240</h>
+        <type>components.instruments.Tacticomp</type>
+    </instrument>
+</stage>

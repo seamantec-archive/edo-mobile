@@ -1,0 +1,208 @@
+/**
+ * Created by seamantec on 29/01/15.
+ */
+package com.utils {
+import com.dynamicInstruments.InstrumentTextureInfo;
+import com.store.RenderTextureContainer;
+
+import flash.events.TimerEvent;
+
+import flash.utils.Timer;
+
+import starling.display.Image;
+
+import starling.display.Quad;
+
+import starling.display.QuadBatch;
+
+import starling.display.Sprite;
+import starling.textures.RenderTexture;
+import starling.textures.Texture;
+
+public class ImageMaskHandler extends Sprite {
+
+    private const FPS:Number = 30;
+    private const ONEFRAME:Number = 1000/FPS;
+
+    private static var _enableTween:Boolean = true;
+
+    private var _container:Vector.<ImageMask>;
+
+    private var _options:Object;
+    private var _min:Number;
+    private var _max:Number;
+    private var _duration:Number;
+    private var _length:Number;
+
+    private var _timer:Timer;
+    private var _to:Number;
+    private var _prevTo:Number;
+    private var _startIndex:int;
+
+    public function ImageMaskHandler(texture:Texture, info:InstrumentTextureInfo, options:Object = null) {
+        _container = new Vector.<ImageMask>();
+
+        if(texture.width!=texture.height) {
+            var size:Number = (texture.width>texture.height) ? texture.width : texture.height;
+            var renderTexture:RenderTexture = RenderTextureContainer.getRenderTexture(RenderTextureContainer.counter.toString(), size,size);
+            renderTexture.draw(new Image(texture));
+            texture = renderTexture;
+        }
+
+        _container.push(new ImageMask(texture, [0.5,0.5, 1,0.5, 0.5,1, 1,1], 3,2, 1,3));
+        _container.push(new ImageMask(texture, [0,0.5, 0.5,0.5, 0,1, 0.5,1], 3,2, 2,0));
+        _container.push(new ImageMask(texture, [0,0, 0.5,0, 0,0.5, 0.5,0.5], 0,1, 2,0));
+        _container.push(new ImageMask(texture, [0.5,0, 1,0, 0.5,0.5, 1,0.5], 0,1, 1,3));
+
+        _min = 0;
+        _max = 360;
+        _duration = 0.5;
+        _options = options;
+        if(_options!=null) {
+            _min = (_options.hasOwnProperty("min")) ? Number(_options["min"]) : 0;
+            if(_min<0) {
+                _min = 0;
+            }
+            _max = (_options.hasOwnProperty("max")) ? Number(_options["max"]) : 360;
+            if(_max>360) {
+                _max = 360;
+            }
+            _duration = (_options.hasOwnProperty("duration")) ? Number(_options["duration"]) : 0.5;
+        }
+
+        _length = (_min<_max) ? _max-_min : 360-_min+_max;
+
+        _to = _min - 90;
+        while(_to<0) {
+            _to += 360;
+        }
+        _prevTo = _to;
+        _startIndex = Math.floor(_to/90);
+
+        this.x = info.origin.x;
+        this.y = info.origin.y;
+        this.pivotX = info.pivot.x;
+        this.pivotY = info.pivot.y;
+
+        _container[0].visible = false;
+        this.addChild(_container[0]);
+        _container[1].visible = false;
+        this.addChild(_container[1]);
+        _container[2].visible = false;
+        this.addChild(_container[2]);
+        _container[3].visible = false;
+        this.addChild(_container[3]);
+    }
+
+    public function forgat(angle:Number, options:Object = null):void {
+        var needTween:Boolean = true;
+        var speedFactor:Number = 1;
+        if (options != null) {
+            needTween = (options.hasOwnProperty("needTween")) ? options["needTween"] : true;
+            speedFactor = (options.hasOwnProperty("speedRatio")) ? options["speedRatio"] : 1;
+        }
+
+        if (!_enableTween) {
+            needTween = false;
+        }
+
+        if (angle > _length) {
+            _to = _max;
+        } else if (angle < 0) {
+            _to = _min;
+        } else {
+            _to = _min + angle;
+        }
+
+        _to -= 90;
+        _to = _to - (Math.floor(_to / 360) * 360);
+        while (_to < 0) {
+            _to += 360;
+        }
+
+        if(_to!=_prevTo) {
+            if(needTween) {
+                var t:Number = _duration/speedFactor;
+                if(_timer==null) {
+                    _timer = new Timer(t*ONEFRAME, t*FPS);
+                    _timer.addEventListener(TimerEvent.TIMER, onTimer);
+                } else {
+                    _timer.reset();
+                    _timer.delay = t*ONEFRAME;
+                    _timer.repeatCount = t*FPS;
+                }
+                _timer.start();
+            } else {
+                draw(_to);
+                _prevTo = _to;
+            }
+        }
+    }
+
+    public function clear():void {
+        _container[0].visible = false;
+        _container[1].visible = false;
+        _container[2].visible = false;
+        _container[3].visible = false;
+
+        _prevTo = _min - 90;
+        while(_prevTo<0) {
+            _prevTo += 360;
+        }
+
+        if(_timer!=null) {
+            _timer.reset();
+        }
+    }
+
+    private function onTimer(e:TimerEvent):void {
+        var to:Number = _prevTo + (_to - _prevTo)*(_timer.currentCount/_timer.repeatCount);
+        draw(to);
+        if(_timer.currentCount==_timer.repeatCount) {
+            _prevTo = _to;
+        }
+    }
+
+    private function draw(to:Number):void {
+        var currentIndex:int = Math.floor(to/90);
+        if(to%90==0) {
+            currentIndex -= 1;
+        }
+        if(currentIndex<_startIndex) {
+            currentIndex += 4;
+        }
+
+        var i:int = _startIndex;
+        var j:int;
+        var item:ImageMask;
+        while(i<(_startIndex+4)) {
+            j = i%4;
+            item = _container[j];
+            if(i<currentIndex) {
+                item.all();
+            } else if(i==currentIndex) {
+                item.mask(to);
+            } else if(item.visible) {
+                item.visible = false;
+            }
+            i++;
+        }
+    }
+
+    public function get min():Number {
+        return _min;
+    }
+
+    public function get max():Number {
+        return _max;
+    }
+
+    public static function get enableTween():Boolean {
+        return _enableTween;
+    }
+
+    public static function set enableTween(value:Boolean):void {
+        _enableTween = value;
+    }
+}
+}

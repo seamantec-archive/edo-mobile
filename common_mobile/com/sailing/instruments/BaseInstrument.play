@@ -1,0 +1,348 @@
+/**
+ * Created with IntelliJ IDEA.
+ * User: pepusz
+ * Date: 2013.06.05.
+ * Time: 14:38
+ * To change this template use File | Settings | File Templates.
+ */
+package com.sailing.instruments {
+
+import com.common.AppProperties;
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentAtlas;
+import com.events.ScaleTouchEvent;
+import com.events.UnitChangedEvent;
+//import com.inAppPurchase.CommonStore;
+import com.sailing.SailData;
+//import com.sailing.minMax.MinMax;
+import com.sailing.units.UnitHandler;
+
+//import components.EdoStage;
+//import components.InstrumentHandler;
+//import components.instruments.Perf1;
+//import components.instruments.Perf3;
+//import components.instruments.Polar;
+//import components.instruments.PolarControl;
+//import components.instruments.digital.BaseDigital;
+
+import flash.geom.Point;
+
+import flash.utils.getQualifiedClassName;
+
+import starling.core.Starling;
+import starling.display.DisplayObject;
+import starling.display.Quad;
+import starling.display.QuadBatch;
+import starling.display.Sprite;
+import starling.events.Event;
+
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+
+public dynamic class BaseInstrument extends Sprite {
+
+    public static const MIN_SIZE:int = 80;
+
+    protected var _minMaxVars:Array = [];
+    protected var _instrumentAtlas:InstrumentAtlas;
+
+    protected var _touhPoint:Point;
+
+    protected const CHUNKS:uint = 8;
+    protected const CHUNKSIZE:Number = 360/CHUNKS;
+
+    protected var _chunks:Vector.<Object>;
+    protected var _prevChunk:Number;
+
+    protected var _intMin:Number;
+    protected var _intMax:Number;
+
+    protected var _id:String;
+
+//    private var _touchPoint:Point;
+//    private var _filter:Quad;
+
+    private var _preview:Boolean;
+
+    public function BaseInstrument(instrumentAtlas:InstrumentAtlas) {
+        super();
+        _instrumentAtlas = instrumentAtlas;
+
+        UnitHandler.instance.addEventListener(UnitChangedEvent.CHANGE, onUnitChange);
+
+        Starling.current.root.addEventListener(ScaleTouchEvent.SCALE, onScale);
+        Starling.current.root.addEventListener(ScaleTouchEvent.END, onEnd);
+
+        buildComponents();
+
+//        if((this is Polar || this is Perf1 || this is Perf3 || this is PolarControl) ? !CommonStore.instance.isPolarEnabled : !CommonStore.instance.isInstrumentsEnabled) {
+//            _filter = new Quad(this.width,this.height, 0x000000);
+//            _filter.alpha = 0.4;
+//            _filter.addEventListener(TouchEvent.TOUCH, onFilterTouch);
+//            this.addChild(_filter);
+//        }
+//
+//        CommonStore.instance.addEventListener("instruments-enabled", enabledHandler);
+//        CommonStore.instance.addEventListener("polar-enabled", enabledHandler);
+    }
+
+    protected function buildComponents():void {
+    }
+
+    protected function initMinMax():void {
+    }
+
+    public function get minMaxVars():Array {
+        return _minMaxVars;
+    }
+
+    public function set id(id:String):void {
+        _id = id;
+    }
+
+    public function get id():String {
+        return _id;
+    }
+
+    public function get enabled():Boolean {
+        return true;//(this is Polar || this is Perf1 || this is Perf3 || this is PolarControl) ? CommonStore.instance.isPolarEnabled : CommonStore.instance.isInstrumentsEnabled;
+    }
+
+    public function set preview(value:Boolean):void {
+        _preview = value;
+    }
+
+    public function get preview():Boolean {
+        return _preview;
+    }
+
+//    private function onFilterTouch(e:TouchEvent):void {
+//        var began:Touch = e.getTouch(this, TouchPhase.BEGAN);
+//        var ended:Touch = e.getTouch(this, TouchPhase.ENDED);
+//        if(began) {
+//            _touchPoint = new Point(began.globalX,began.globalY);
+//        } else if(ended) {
+//            if (Math.abs(_touchPoint.x-ended.globalX)<=(EdoMobile.FINGER_SIZE/2) && Math.abs(_touchPoint.y-ended.globalY)<=(EdoMobile.FINGER_SIZE/2) && !EdoMobile.onMove) {
+//                EdoMobile.menu.toStore();
+//            }
+//        }
+//    }
+
+//    private function enabledHandler(e:Event):void {
+//        if(_filter!=null && ((this is Polar || this is Perf1 || this is Perf3 || this is PolarControl) ? CommonStore.instance.isPolarEnabled : CommonStore.instance.isInstrumentsEnabled)) {
+//            _filter.removeEventListener(TouchEvent.TOUCH, onFilterTouch);
+//            this.removeChild(_filter, true);
+//        }
+//    }
+
+    private function onUnitChange(e:UnitChangedEvent):void {
+        unitChanged();
+    }
+
+    private function onScale(e:ScaleTouchEvent):void {
+//        if(this==e.data.target) {
+//            this.width += e.data.scale;
+//            this.height += e.data.scale;
+//        }
+    }
+
+    private function onEnd(e:ScaleTouchEvent):void {
+//        if(this==e.data.target) {
+//            if(this.width<MIN_SIZE || this.height<MIN_SIZE) {
+//                this.width = MIN_SIZE;
+//                this.height = MIN_SIZE;
+//            } else {
+//                this.width = Math.round(this.width/10)*10;
+//                this.height = Math.round(this.width/10)*10;
+//            }
+//        }
+    }
+
+    protected function fitSpriteInPivot(spr:Sprite):Object {
+        var fit:Object = getPositionAndPivot(spr);
+
+        var length:int = spr.numChildren;
+        var item:DisplayObject;
+        for(var i:int=0; i<length; i++) {
+            item = spr.getChildAt(i);
+            item.x += fit.pivot.x;
+            item.y += fit.pivot.y;
+        }
+
+        return fit;
+    }
+
+    protected function fitSpriteInPosition(spr:Sprite):Object {
+        var fit:Object = getPositionAndPivot(spr);
+
+        var length:int = spr.numChildren;
+        var item:DisplayObject;
+        for(var i:int=0; i<length; i++) {
+            item = spr.getChildAt(i);
+            item.x -= fit.position.x;
+            item.y -= fit.position.y;
+            item.pivotX -= fit.pivot.x;
+            item.pivotY -= fit.pivot.y;
+        }
+
+        return fit;
+    }
+
+    private function getPositionAndPivot(spr:Sprite):Object {
+        var length:int = spr.numChildren;
+        var item:DisplayObject;
+        var fit:Object = { position: new Point(), pivot: new Point() };
+        var w:Number = Math.floor(spr.width);
+        var h:Number = Math.floor(spr.height);
+        for(var i:int=0; i<length; i++) {
+            item = spr.getChildAt(i);
+            if(Math.floor(item.width)==w && Math.floor(item.height)==h) {
+                fit.position.x = item.x;
+                fit.position.y = item.y;
+                fit.pivot.x = item.pivotX;
+                fit.pivot.y = item.pivotY;
+                break;
+            }
+        }
+
+        return fit;
+    }
+
+    protected function touchIsEnd(e:TouchEvent):Touch {
+        var began:Touch = e.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = e.getTouch(this, TouchPhase.ENDED);
+        if(began) {
+            _touhPoint = new Point(began.globalX,began.globalY);
+            return null;
+        } else if(ended) {
+            if (Math.abs(_touhPoint.x-ended.globalX)<=(EdoMobile.FINGER_SIZE/2) && Math.abs(_touhPoint.y-ended.globalY)<=(EdoMobile.FINGER_SIZE/2) && !EdoMobile.onMove) {
+                return ended;
+            }
+        }
+        return null;
+    }
+
+    public function previewUpdateDatas():void {
+        if(_preview) {
+            //updateDatas(InstrumentHandler.previewSailData, false);
+            _preview = false;
+        }
+    }
+
+    public function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        throw new Error("Must be override updateDatas " + getQualifiedClassName(this));
+    }
+
+    public function updateState(stateType:String):void {
+        throw new Error("Must be override updateState " + getQualifiedClassName(this));
+    }
+
+    public function dataInvalidated(key:String):void {
+        throw new Error("Must be override dataInvalidate " + getQualifiedClassName(this));
+    }
+
+    public function dataPreInvalidated(key:String):void {
+    }
+
+    public function unitChanged():void {
+        throw new Error("Must be override dataInvalidate " + getQualifiedClassName(this));
+    }
+
+    public function minMaxChanged():void {
+        throw new Error("Must be override minMaxChanged " + getQualifiedClassName(this));
+    }
+
+    protected function getChunk(value:Number):Number {
+        return Math.floor(value/CHUNKSIZE);
+    }
+
+    protected function fillChunks():void {
+        for(var i:int=0; i<CHUNKS; i++) {
+            _chunks[i] = {
+                value : 0,
+                min: (i*CHUNKSIZE) + CHUNKSIZE,
+                max: (i*CHUNKSIZE)
+            };
+        }
+    }
+
+    protected function fillPath(from:Number, to:Number, value:Number):void {
+        if(value<_chunks[to].min) {
+            _chunks[to].min = value;
+        }
+        if(value>_chunks[to].max) {
+            _chunks[to].max = value;
+        }
+
+        if(from==to) {
+            return;
+        }
+        if(to<from) {
+            var tmp:Number = to;
+            to = from;
+            from = tmp;
+        }
+
+        var go:Number = to - from;
+        var back:Number = CHUNKS + from - to;
+        var i:Number;
+        if(go<back) {
+            i = from;
+            while(i<=to) {
+                _chunks[i].value = 1;
+                i++;
+            }
+        } else {
+            i = from;
+            while(i>=0) {
+                _chunks[i].value = 1;
+                i--;
+            }
+            i = CHUNKS - 1;
+            while(i>=to) {
+                _chunks[i].value = 1;
+                i--;
+            }
+        }
+    }
+
+    protected function getMinMax():Object {
+        var min:Number = 0;
+        var max:Number = 360;
+
+        for(var i:int=0; i<CHUNKS; i++) {
+            if(_chunks[i].value==1) {
+                if(i==0) {
+                    if(_chunks[CHUNKS-1].value==0) {
+                        min = _chunks[0].min;
+                    }
+                    if(_chunks[i+1].value==0) {
+                        max = _chunks[i].max;
+                    }
+                } else if(i==(CHUNKS-1)) {
+                    if(_chunks[i-1].value==0) {
+                        min = _chunks[i].min;
+                    }
+                    if(_chunks[0].value==0) {
+                        max = _chunks[CHUNKS-1].max;
+                    }
+                } else {
+                    if(_chunks[i-1].value==0) {
+                        min = _chunks[i].min;
+                    }
+                    if(_chunks[i+1].value==0) {
+                        max = _chunks[i].max;
+                    }
+                }
+            }
+        }
+
+        return {
+            min: min,
+            max: max
+        };
+    }
+
+}
+}

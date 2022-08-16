@@ -1,0 +1,345 @@
+/**
+ * Created by seamantec on 06/11/14.
+ */
+package components.instruments {
+
+import com.dynamicInstruments.DynamicSprite;
+import com.dynamicInstruments.InstrumentQuadBatcher;
+import com.sailing.ForgatHandler;
+import com.sailing.SailData;
+import com.sailing.Splitter;
+import com.sailing.instruments.BaseInstrument;
+import com.sailing.minMax.MinMax;
+import com.utils.Assets;
+import com.utils.Blinker;
+import com.utils.SaveHandler;
+
+import starling.events.TouchEvent;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+public class Barometer extends BaseInstrument {
+
+    private const BEGIN:Number = 45;
+    private const ONE_HOUR:int = 3600*1000;
+    private const HOURS:int = 9;
+    private var GRAPH_MAX:Number;
+    private var GRAPH_MIN:Number;
+    private var GRAPH_DIFFERENCE:Number;
+
+    public var actualState:String = "";
+
+    private var _forgatHandler:ForgatHandler;
+    private var _unit:Number = 270/120;
+    private var _offset:Number = 940;
+
+    private var _firstTimestamp:Number = -1;
+    private var _hours:Array;
+    private var _graphChanged:Boolean;
+
+    private var analogBackgroundBatch:InstrumentQuadBatcher;
+    private var analogBackground:DynamicSprite;
+    private var analog:DynamicSprite;
+    private var center:DynamicSprite;
+    private var centerBatch:InstrumentQuadBatcher;
+    private var analogi:DynamicSprite;
+    private var digitalBackgroundBatch:InstrumentQuadBatcher;
+    private var digitalBackground:DynamicSprite;
+    private var digital:DynamicSprite;
+    private var graf:DynamicSprite;
+
+    public function Barometer() {
+        super(Assets.getInstrument("barometer"));
+
+        minMaxVars["mda.barometricPressure"] = new MinMax(undefined, undefined, this);
+
+        _forgatHandler = new ForgatHandler(analog["mutato"], this, { offsetToZero: -90 - BEGIN, min: 225, max: 135 });
+
+        setAnalog();
+        this.addEventListener(TouchEvent.TOUCH, digitalis);
+
+        setMdaInvalid();
+    }
+
+    protected override function buildComponents():void {
+        var basic:Texture = Assets.getAtlas("basic_common");
+        var barometer:Texture = Assets.getAtlas("barometer");
+
+        analogBackground = _instrumentAtlas.getComponentAsDynamicSprite(Assets.getAtlas("speed_common"), "analog.instance2");
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "analog.instance8", analogBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "analog.instance9", analogBackground);
+
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance14", analogBackground);
+
+        analog = new DynamicSprite();
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.mutato", analog);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.min", analog);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.max", analog);
+
+        center = new DynamicSprite();
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "analog.instance12", center);
+
+        analogi = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "analog.digi", analogi, center, VAlign.CENTER,HAlign.RIGHT, .96);
+
+        analogBackgroundBatch = new InstrumentQuadBatcher(-1,-1,"analogBg");
+        analogBackgroundBatch.addDisplayObject(analogBackground);
+        this.addChild(analogBackgroundBatch.quadBatch);
+
+        this.addChild(analog);
+
+        centerBatch = new InstrumentQuadBatcher(analogBackground.width,analogBackground.height);
+        centerBatch.addDisplayObject(center);
+        this.addChild(centerBatch.quadBatch);
+
+        this.addChild(analogi);
+
+        digitalBackground = _instrumentAtlas.getComponentAsDynamicSprite(barometer, "digital.instance19");
+
+        digital = new DynamicSprite();
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digi", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.03);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimin", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.03, 0xffeea3);
+        _instrumentAtlas.getTextFieldComponentWithParent(basic, "digital.digimax", digital, digitalBackground, VAlign.CENTER,HAlign.RIGHT, 1.03, 0xffeea3);
+
+        graf = _instrumentAtlas.getComponentAsDynamicSprite(barometer, "digital.graf", false, true);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r1", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r2", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r3", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r4", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r5", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r6", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r7", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r8", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(basic, "digital.graf.r9", graf);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.graf.instance33", graf);
+        digital.addChild(graf);
+
+        GRAPH_MAX = graf["r1"].height;
+        GRAPH_MIN = 30*(GRAPH_MAX/250);
+        GRAPH_DIFFERENCE = GRAPH_MAX - GRAPH_MIN;
+
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance34", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance35", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance36", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance37", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance38", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance39", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance40", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance41", digitalBackground);
+        _instrumentAtlas.getComponentAsImageWithParent(barometer, "digital.instance42", digitalBackground);
+
+        digitalBackgroundBatch = new InstrumentQuadBatcher(-1,-1,"digitalBg");
+        digitalBackgroundBatch.addDisplayObject(digitalBackground);
+        this.addChild(digitalBackgroundBatch.quadBatch);
+
+        this.addChild(digital);
+    }
+
+    private function setAnalog():void {
+        analogBackgroundBatch.quadBatch.visible = true;
+        analog.visible = true;
+        analogi.visible = true;
+        centerBatch.quadBatch.visible = true;
+
+        digitalBackgroundBatch.quadBatch.visible = false;
+        digital.visible = false;
+    }
+
+    private function setDigital():void {
+        analogBackgroundBatch.quadBatch.visible = false;
+        analog.visible = false;
+        analogi.visible = false;
+        centerBatch.quadBatch.visible = false;
+
+        digitalBackgroundBatch.quadBatch.visible = true;
+        digital.visible = true;
+    }
+
+    private function digitalis(event:TouchEvent):void {
+        if (touchIsEnd(event)) {
+            if (analog.visible) {
+                setDigital();
+                actualState = "digital";
+            } else {
+                setAnalog();
+                actualState = "analog";
+            }
+
+            SaveHandler.instance.setState(_id, actualState);
+        }
+    }
+
+    private function setState(value:String):void {
+        actualState = value;
+        if (value == "digital") {
+            setDigital();
+        } else if (value == "analog") {
+            setAnalog();
+        }
+    }
+
+    public override function updateDatas(datas:SailData, needTween:Boolean = true):void {
+        if(datas!=null && datas.mda.isValid()) {
+            removeMdaBlinker();
+
+            analog["mutato"].visible = true;
+
+            if(!isNaN((minMaxVars["mda.barometricPressure"] as MinMax).min)) {
+                analog["min"].visible = true;
+            }
+            if(!isNaN((minMaxVars["mda.barometricPressure"] as MinMax).max)) {
+                analog["max"].visible = true;
+            }
+
+            var value:Number = datas.mda.barometricPressure.value;
+
+            analogi["digi"]["digi_a"].text = Splitter.withValue(value).a4;
+            digital["digi"]["digi_a"].text = Splitter.withValue(value).a4;
+
+            _forgatHandler.forgat((value - _offset)*_unit, { needTween: needTween });
+
+            if(datas.sailDataTimestamp!=-1) {
+                if (_firstTimestamp == -1) {
+                    _firstTimestamp = datas.sailDataTimestamp;
+                    _hours.push(value);
+                    _graphChanged = true;
+                } else if (datas.sailDataTimestamp >= (_firstTimestamp + (_hours.length * ONE_HOUR))) {
+                    if (_hours.length == HOURS) {
+                        _hours.shift();
+                        _firstTimestamp += ONE_HOUR;
+                    }
+
+                    _hours.push(value);
+                    _graphChanged = true;
+                }
+            }
+
+            if(_graphChanged) {
+                var min:Number = getGraphMin();
+                var max:Number = getGraphMax();
+                var difference:Number = max - min;
+                var length:int = _hours.length;
+                if(length==1) {
+                    graf["r1"].height = GRAPH_MAX;
+                } else {
+                    for (var i:int = 0; i < length; i++) {
+                        graf["r" + (length - i)].height = (difference==0) ? GRAPH_MAX : ((((difference - (max - _hours[i])) / difference) * GRAPH_DIFFERENCE) + GRAPH_MIN);
+                    }
+                }
+                _graphChanged = false;
+            }
+        }
+    }
+
+    public override function updateState(stateType:String):void {
+        setState(stateType);
+    }
+
+    public override function dataInvalidated(key:String):void {
+        if(key === "mda") {
+            removeMdaBlinker();
+            analog["mutato"].alpha = 1.0;
+            (minMaxVars["mda.barometricPressure"] as MinMax).reset((minMaxVars["mda.barometricPressure"] as MinMax).unitClass);
+            setMdaInvalid();
+        }
+    }
+
+    public override function dataPreInvalidated(key:String):void {
+        if(key === "mda") {
+            analog["mutato"].alpha = 1.0;
+
+            Blinker.addObject(analog["mutato"]);
+            Blinker.addObject(analogi["digi"]["digi_a"]);
+            Blinker.addObject(digital["digi"]["digi_a"]);
+        }
+    }
+
+    public override function unitChanged():void {
+    }
+
+    public override function minMaxChanged():void {
+        var min:Number = (minMaxVars["mda.barometricPressure"] as MinMax).min;
+        var max:Number = (minMaxVars["mda.barometricPressure"] as MinMax).max;
+        if(!isNaN(min) && !isNaN(max)) {
+            digital["digimin"]["digi_a"].text = Splitter.withValue(min).a4;
+            digital["digimax"]["digi_a"].text = Splitter.withValue(max).a4;
+
+            min = (min - _offset)*_unit;
+            if(min<BEGIN) {
+                analog["min"].rotation = _forgatHandler.min;
+            } else if(min>180+_forgatHandler.max) {
+                analog["min"].rotation = _forgatHandler.max;
+            } else {
+                analog["min"].rotation = min + BEGIN;
+            }
+            max = (max - _offset)*_unit;
+            if(max<BEGIN) {
+                analog["max"].rotation = _forgatHandler.min;
+            } else if(max>180+_forgatHandler.max) {
+                analog["max"].rotation = 180 + _forgatHandler.max;
+            } else {
+                analog["max"].rotation = max + BEGIN;
+            }
+        } else {
+            analog["min"].visible = false;
+            analog["max"].visible = false;
+
+            digital["digimin"]["digi_a"].text = "----";
+            digital["digimax"]["digi_a"].text = "----";
+        }
+    }
+
+    private function removeMdaBlinker():void {
+        Blinker.removeObject(analog["mutato"]);
+        Blinker.removeObject(analogi["digi"]["digi_a"]);
+        Blinker.removeObject(digital["digi"]["digi_a"]);
+    }
+
+    private function setMdaInvalid():void {
+        _firstTimestamp = -1;
+        _hours = new Array();
+        _graphChanged = false;
+        for(var i:int=1; i<=HOURS; i++) {
+            graf["r" + i].height = 0;
+        }
+
+        analog["mutato"].visible = false;
+        if(!(minMaxVars["mda.barometricPressure"] as MinMax).reseted) {
+            analog["min"].visible = true;
+            analog["max"].visible = true;
+        } else {
+            analog["min"].visible = false;
+            analog["max"].visible = false;
+
+            digital["digimin"]["digi_a"].text = "----";
+            digital["digimax"]["digi_a"].text = "----";
+        }
+
+        analogi["digi"]["digi_a"].text = "----";
+        digital["digi"]["digi_a"].text = "----";
+    }
+
+    private function getGraphMin():Number {
+        var min:Number = _hours[0];
+        for(var i:int=0; i<_hours.length; i++) {
+            if(_hours[i]<min) {
+                min = _hours[i];
+            }
+        }
+
+        return min;
+    }
+
+    private function getGraphMax():Number {
+        var max:Number = _hours[0];
+        for(var i:int=0; i<_hours.length; i++) {
+            if(_hours[i]>max) {
+                max = _hours[i];
+            }
+        }
+
+        return max;
+    }
+}
+}

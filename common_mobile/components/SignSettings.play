@@ -1,0 +1,334 @@
+/**
+ * Created by seamantec on 02/02/15.
+ */
+package components {
+import com.common.AppProperties;
+import com.events.CloudEvent;
+import com.harbor.PolarFileHandler;
+import com.harbor.PolarHandlerEvent;
+import com.store.SettingsConfigs;
+import com.ui.StageBtn;
+import com.utils.Assets;
+import com.utils.FontFactory;
+import com.harbor.CloudHandler;
+
+//import feathers.controls.TextInput;
+//import feathers.controls.text.StageTextTextEditor;
+//import feathers.core.ITextEditor;
+//import feathers.events.FeathersEventType;
+
+import flash.display.BitmapData;
+
+import flash.display.Shape;
+
+import starling.display.Image;
+
+import starling.display.Sprite;
+
+import starling.events.Event;
+import starling.events.TouchEvent;
+
+import starling.text.TextField;
+import starling.textures.Texture;
+import starling.utils.HAlign;
+import starling.utils.VAlign;
+
+public class SignSettings extends Sprite {
+
+    private static var _errorlLabel:TextField;
+    private static var _emailLabel:TextField;
+    private static var _emailInput:TextField;
+    private static var _passwordLabel:TextField;
+    private static var _passwordInput:TextField;
+    private static var _signInBtn:StageBtn;
+    private static var _signOutBtn:StageBtn;
+
+    private static var _ledSynced:Texture;
+    private static var _ledSyncing:Texture;
+    private static var _ledNotSynced:Texture;
+    private static var _led:Image;
+
+    private const EMAIL_REGEXP:RegExp = /^[\w.-]+@\w[\w.-]+\.[\w.-]*[a-z][a-z]$/i;
+
+    public function SignSettings() {
+        super();
+        this.addEventListener(Event.ADDED_TO_STAGE, addedToStageHandler);
+
+        CloudHandler.instance.addEventListener(CloudEvent.SIGNIN_COMPLETE, onSignInComplete);
+        CloudHandler.instance.addEventListener(CloudEvent.SIGNIN_ERROR, onSignInError);
+    }
+
+    private function addEmailAndPassword():void {
+        if (_errorlLabel == null) {
+            _errorlLabel = FontFactory.getWhiteLeftFont(Menu.WIDTH, 40, 14);
+            _errorlLabel.hAlign = HAlign.LEFT;
+            _errorlLabel.vAlign = VAlign.CENTER;
+            _errorlLabel.text = "";
+            _errorlLabel.width = UnitSettings.WIDTH;
+            _errorlLabel.x = UnitSettings.PADDING;
+            _errorlLabel.y = 0;
+            _errorlLabel.color = 0xff0000;
+            this.addChild(_errorlLabel);
+        }
+        if (_emailLabel == null) {
+            _emailLabel = FontFactory.getWhiteLeftFont(Menu.WIDTH, 20, 14);
+            _emailLabel.hAlign = HAlign.CENTER;
+            _emailLabel.vAlign = VAlign.CENTER;
+            _emailLabel.text = "Email";
+            _emailLabel.x = 0;
+            _emailLabel.y = 36;
+            this.addChild(_emailLabel);
+        }
+        if (_emailInput == null) {
+            _emailInput = new TextInput();
+            _emailInput.paddingLeft = 10;
+            _emailInput.paddingTop = 5;
+            _emailInput.backgroundDisabledSkin = new Image(Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("input_field"));
+            _emailInput.backgroundFocusedSkin = _emailInput.backgroundDisabledSkin;
+            _emailInput.backgroundSkin = _emailInput.backgroundDisabledSkin;
+            _emailInput.width = _emailInput.backgroundDisabledSkin.width*0.9;
+            _emailInput.height = _emailInput.backgroundDisabledSkin.height;
+            _emailInput.x = (Menu.WIDTH - _emailInput.width)/2;
+            _emailInput.y = 58;
+            _emailInput.textEditorFactory = function ():ITextEditor {
+                var editor:StageTextTextEditor = new StageTextTextEditor();
+                editor.fontFamily = "Amble";
+                editor.fontSize = 15;
+                editor.multiline = false;
+                editor.y = 0;
+                editor.color = 0x000;
+                if(!AppProperties.isIOS) {
+                    editor.addEventListener(FeathersEventType.FOCUS_IN, onEmailFocus);
+                }
+                return editor;
+            };
+            _emailInput.text = "";
+            addChild(_emailInput);
+        }
+        if (_passwordLabel == null) {
+            _passwordLabel = FontFactory.getWhiteLeftFont(Menu.WIDTH, 20, 14);
+            _passwordLabel.hAlign = HAlign.CENTER;
+            _passwordLabel.vAlign = VAlign.CENTER;
+            _passwordLabel.text = "Password";
+            _passwordLabel.x = 0;
+            _passwordLabel.y = 90;
+            this.addChild(_passwordLabel);
+
+        }
+        if (_passwordInput == null) {
+            _passwordInput = new TextInput();
+            _passwordInput.paddingLeft = 10;
+            _passwordInput.paddingTop = 5;
+            _passwordInput.backgroundDisabledSkin = new Image(Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("input_field"));
+            _passwordInput.backgroundFocusedSkin = _passwordInput.backgroundDisabledSkin;
+            _passwordInput.backgroundSkin = _passwordInput.backgroundDisabledSkin;
+            _passwordInput.width = _passwordInput.backgroundDisabledSkin.width*0.9;
+            _passwordInput.height = _passwordInput.backgroundDisabledSkin.height;
+            _passwordInput.textEditorFactory = function ():ITextEditor {
+                var editor:StageTextTextEditor = new StageTextTextEditor();
+                editor.fontFamily = "Amble";
+                editor.fontSize = 15;
+                editor.color = 0x000;
+                if(!AppProperties.isIOS) {
+                    editor.addEventListener(FeathersEventType.FOCUS_IN, onPasswordFocus);
+                }
+                return editor;
+            };
+            _passwordInput.x = (Menu.WIDTH - _passwordInput.width)/2;
+            _passwordInput.y = 110;
+            _passwordInput.displayAsPassword = true;
+            _passwordInput.text = "";
+            addChild(_passwordInput);
+        }
+    }
+
+    private function onEmailFocus(e:Event):void {
+        EdoMobile.menu.to(-(EdoMobile.menu.signY + _emailLabel.y));
+    }
+
+    private function onPasswordFocus(e:Event):void {
+        EdoMobile.menu.to(-(EdoMobile.menu.signY + _passwordLabel.y));
+    }
+
+    private function setLed():void {
+        var currentLed:Texture;
+        switch (PolarFileHandler.instance.status) {
+            case PolarFileHandler.STATUS_SYNCED:
+                if(_ledSynced==null) {
+                    _ledSynced = createLed(0x00cc00);
+                }
+                currentLed = _ledSynced;
+                break;
+
+            case PolarFileHandler.STATUS_NOT_SYNCED:
+                if(_ledNotSynced==null) {
+                    _ledNotSynced = createLed(0xff0000);
+                }
+                currentLed = _ledNotSynced;
+                break;
+
+            case PolarFileHandler.STATUS_SYNCING:
+                if(_ledSyncing==null) {
+                    _ledSyncing = createLed(0xfefe00);
+                }
+                currentLed = _ledSyncing;
+                break;
+
+            default:
+                if(currentLed==null) {
+                    currentLed = createLed(0xff0000);
+                }
+        }
+
+        if(_led==null) {
+            _led = new Image(currentLed);
+        } else {
+            _led.texture = currentLed;
+        }
+
+        if(this.getChildIndex(_led)==-1) {
+            _led.y = _emailLabel.y + 3;
+            this.addChild(_led);
+        }
+    }
+
+    private function createLed(color:uint):Texture {
+        var shape:Shape = new Shape();
+        shape.graphics.beginFill(color);
+        shape.graphics.drawCircle(6,6,4);
+        shape.graphics.endFill();
+
+        var data:BitmapData = new BitmapData(12,12, true, 0x0);
+        data.draw(shape);
+
+        return Texture.fromBitmapData(data, false);
+    }
+
+    private function addedToStageHandler(e:Event):void {
+        addEmailAndPassword();
+        if(_signInBtn==null) {
+            _signInBtn = new StageBtn("Sign in");
+            _signInBtn.x = ((Menu.WIDTH/4)*3) - (_signInBtn.width/2) - 5;
+            _signInBtn.y = 154;
+            _signInBtn.addEventListener(TouchEvent.TOUCH, onSignIn);
+            this.addChild(_signInBtn);
+        }
+        if(_signOutBtn==null) {
+            _signOutBtn = new StageBtn("Sign out");
+            _signOutBtn.x = ((Menu.WIDTH/4)*3) - (_signOutBtn.width/2) - 5;
+            _signOutBtn.y = 58;
+            _signOutBtn.addEventListener(TouchEvent.TOUCH, onSignOut);
+            this.addChild(_signOutBtn);
+        }
+
+        setLed();
+
+        PolarFileHandler.instance.addEventListener(PolarHandlerEvent.POLAR_LIST_READY, onStatusChange);
+        PolarFileHandler.instance.addEventListener(PolarHandlerEvent.POLAR_LIST_STATUS_CHANGE, onStatusChange);
+
+        if(CloudHandler.instance.email!=null && CloudHandler.instance.token!=null) {
+            signedIn();
+        } else {
+            signedOut();
+        }
+    }
+
+    private function onStatusChange(e:PolarHandlerEvent):void {
+        setLed();
+    }
+
+    private function onSignIn(e:TouchEvent):void {
+        if(_signInBtn.touchIsEnd(e)) {
+            var errors:Array = new Array();
+            if(_emailInput.text.length==0 || !EMAIL_REGEXP.test(_emailInput.text)) {
+                errors.push("The email address is not valid.\n");
+            }
+            if(_passwordInput.text.length<8) {
+                errors.push("The minimum password length is 8.\n");
+            }
+            if(errors.length==0) {
+                CloudHandler.instance.signIn(_emailInput.text, _passwordInput.text);
+            } else {
+                signedError(errors);
+            }
+
+            EdoMobile.menu.to(0);
+        }
+    }
+
+    private function onSignInComplete(e:Event):void {
+        signedIn();
+    }
+
+    private function onSignInError(e:Event):void {
+        signedError(e.data as Array);
+    }
+
+    private function onSignOut(e:TouchEvent):void {
+        if(_signOutBtn.touchIsEnd(e)) {
+            CloudHandler.instance.remove(true);
+            signedOut();
+        }
+    }
+
+    private function signedIn():void {
+        _errorlLabel.visible = false;
+        _emailLabel.text = CloudHandler.instance.email;
+        _emailLabel.hAlign = HAlign.LEFT;
+        _emailLabel.width = UnitSettings.WIDTH;
+        _emailLabel.x = UnitSettings.PADDING;
+        _emailInput.visible = false;
+        _passwordLabel.visible = false;
+        _passwordInput.visible = false;
+
+        _signInBtn.visible = false;
+        _signOutBtn.visible = true;
+
+        _led.visible = true;
+
+        EdoMobile.menu.repositionElements(90);
+    }
+
+    private function signedOut():void {
+        _errorlLabel.visible = false;
+        _emailLabel.text = "Email";
+        _emailLabel.hAlign = HAlign.CENTER;
+        _emailLabel.width = Menu.WIDTH;
+        _emailLabel.x = 0;
+        _emailInput.visible = true;
+        _passwordLabel.visible = true;
+        _passwordInput.visible = true;
+
+        _emailInput.text = "";
+        _passwordInput.text = "";
+
+        _signInBtn.visible = true;
+        _signOutBtn.visible = false;
+
+        _led.visible = false;
+
+        EdoMobile.menu.repositionElements(this.height);
+    }
+
+    private function signedError(errors:Array):void {
+        _errorlLabel.visible = true;
+        _emailLabel.visible = true;
+        _emailInput.visible = true;
+        _passwordLabel.visible = true;
+        _passwordInput.visible = true;
+
+        _signInBtn.visible = true;
+        _signOutBtn.visible = false;
+
+        _led.visible = false;
+
+        _errorlLabel.text = "";
+        var length:int = errors.length;
+        for(var i:int=0; i<length; i++) {
+            _errorlLabel.text += errors[i];
+        }
+
+        EdoMobile.menu.repositionElements(this.height);
+    }
+}
+}

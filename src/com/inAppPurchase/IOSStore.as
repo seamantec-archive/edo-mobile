@@ -1,0 +1,227 @@
+/**
+ * Created by pepusz on 14. 11. 26..
+ */
+package com.inAppPurchase {
+import starling.events.Event;
+import starling.events.EventDispatcher;
+
+DS::ios{
+    import com.adobe.ane.productStore.Product;
+    import com.adobe.ane.productStore.ProductEvent;
+    import com.adobe.ane.productStore.ProductStore;
+    import com.adobe.ane.productStore.Transaction;
+    import com.adobe.ane.productStore.TransactionEvent;
+}
+public class IOSStore extends EventDispatcher {
+    public static var _instance:IOSStore;
+    DS::ios{
+        private var productStore:ProductStore;
+    }
+    private var _products:Vector.<ProductInfo> = new <ProductInfo>[];
+    private var _productsReady:Boolean = false;
+
+    public function IOSStore() {
+        DS::ios{
+            productStore = new ProductStore();
+            registerPurchaseEvents()
+            registerRestoreEvents()
+        }
+    }
+
+
+    public function loadProducts():void {
+        DS::ios{
+            registerProductDetailsEvents();
+            productStore.requestProductsDetails(new <String>[CommonStore.alarmProductId, CommonStore.instrumentsProductId, CommonStore.polarProductId]);
+        }
+    }
+
+    public function buyAlarms():void {
+        buyThing(CommonStore.alarmProductId);
+    }
+
+    public function buyInstruments():void {
+        buyThing(CommonStore.instrumentsProductId);
+    }
+
+    public function buyPolar():void {
+        buyThing(CommonStore.polarProductId);
+    }
+
+    public function restore():void {
+        DS::ios{
+            registerRestoreEvents()
+            productStore.restoreTransactions();
+        }
+    }
+
+    private function buyThing(identifier:String):void {
+        DS::ios{
+            registerPurchaseEvents()
+            registerRestoreEvents()
+            productStore.makePurchaseTransaction(identifier);
+        }
+    }
+
+    DS::ios{
+        private function purchaseCanceled(event:TransactionEvent):void {
+            deRegisterPurchaseEvents()
+            deRegisterRestoreEvents()
+            finishAllTransaction(event)
+            dispatchEvent(new Event("purchase-canceled"));
+        }
+    }
+
+
+    DS::ios{
+        private function purchaseSuccess(event:TransactionEvent):void {
+            deRegisterPurchaseEvents()
+            deRegisterRestoreEvents()
+            activateElements(event);
+            finishAllTransaction(event)
+        }
+    }
+
+    DS::ios{
+        private function activateElements(event:TransactionEvent):void {
+            for (var i:int = 0; i < event.transactions.length; i++) {
+                var transaction:Transaction = event.transactions[i];
+                if (transaction.productIdentifier === CommonStore.alarmProductId) {
+                    CommonStore.instance.activateAlarm();
+                } else if (transaction.productIdentifier === CommonStore.instrumentsProductId) {
+                    CommonStore.instance.activateInstruments();
+                } else if (transaction.productIdentifier === CommonStore.polarProductId) {
+                    CommonStore.instance.activatePolar();
+                }
+            }
+        }
+    }
+
+    DS::ios{
+        private function finishAllTransaction(event:TransactionEvent):void {
+            for (var i:int = 0; i < event.transactions.length; i++) {
+                productStore.finishTransaction(event.transactions[i].identifier)
+            }
+        }
+    }
+
+    DS::ios{
+        private function purchaseFailed(event:TransactionEvent):void {
+            deRegisterPurchaseEvents()
+            deRegisterRestoreEvents()
+            finishAllTransaction(event)
+            dispatchEvent(new Event("purchase-failed"));
+        }
+    }
+
+    DS::ios{
+        private function restoreComplete(event:TransactionEvent):void {
+            //TODO save keys to local store, and dispatch custom event
+            trace("RESTORE COMPLETE")
+        }
+    }
+
+    DS::ios{
+        private function restoreFailed(event:TransactionEvent):void {
+            trace("RESTPRE FAILED")
+        }
+    }
+
+    DS::ios{
+        private function restoreSuccess(event:TransactionEvent):void {
+            activateElements(event);
+            finishAllTransaction(event)
+        }
+    }
+    DS::ios{
+
+        private function productInfoSuccess(event:ProductEvent):void {
+            _products.length = 0;
+            var appStoreProducts:Vector.<Product> = event.products;
+            for (var i:int = 0; i < appStoreProducts.length; i++) {
+                var product:Product = appStoreProducts[i];
+                var productInfo:ProductInfo = new ProductInfo();
+                productInfo.name = product.title;
+                productInfo.description = product.description;
+                productInfo.identifier = product.identifier;
+                productInfo.price = product.price + "";
+                productInfo.currency = product.priceLocale;
+                _products.push(productInfo)
+            }
+            _productsReady = true;
+            dispatchEvent(new Event("product-infos-ready"));
+            deRegisterProductDetailsEvents
+        }
+    }
+    DS::ios{
+
+        private function productInfoFailed(event:ProductEvent):void {
+            dispatchEvent(new Event("product-infos-failed"));
+            deRegisterPurchaseEvents()
+        }
+    }
+    private function registerPurchaseEvents():void {
+        DS::ios{
+            productStore.addEventListener(TransactionEvent.PURCHASE_TRANSACTION_CANCEL, purchaseCanceled);
+            productStore.addEventListener(TransactionEvent.PURCHASE_TRANSACTION_SUCCESS, purchaseSuccess);
+            productStore.addEventListener(TransactionEvent.PURCHASE_TRANSACTION_FAIL, purchaseFailed);
+        }
+
+    }
+
+    private function deRegisterPurchaseEvents():void {
+        DS::ios{
+            productStore.removeEventListener(TransactionEvent.PURCHASE_TRANSACTION_CANCEL, purchaseCanceled);
+            productStore.removeEventListener(TransactionEvent.PURCHASE_TRANSACTION_SUCCESS, purchaseSuccess);
+            productStore.removeEventListener(TransactionEvent.PURCHASE_TRANSACTION_FAIL, purchaseFailed);
+        }
+    }
+
+    private function registerRestoreEvents():void {
+        DS::ios{
+            productStore.addEventListener(TransactionEvent.RESTORE_TRANSACTION_COMPLETE, restoreComplete);
+            productStore.addEventListener(TransactionEvent.RESTORE_TRANSACTION_FAIL, restoreFailed);
+            productStore.addEventListener(TransactionEvent.RESTORE_TRANSACTION_SUCCESS, restoreSuccess);
+        }
+
+    }
+
+    private function deRegisterRestoreEvents():void {
+        DS::ios{
+            productStore.removeEventListener(TransactionEvent.RESTORE_TRANSACTION_COMPLETE, restoreComplete);
+            productStore.removeEventListener(TransactionEvent.RESTORE_TRANSACTION_FAIL, restoreFailed);
+            productStore.removeEventListener(TransactionEvent.RESTORE_TRANSACTION_SUCCESS, restoreSuccess);
+        }
+    }
+
+    private function registerProductDetailsEvents():void {
+        DS::ios{
+            productStore.addEventListener(ProductEvent.PRODUCT_DETAILS_SUCCESS, productInfoSuccess);
+            productStore.addEventListener(ProductEvent.PRODUCT_DETAILS_FAIL, productInfoFailed);
+        }
+    }
+
+    private function deRegisterProductDetailsEvents():void {
+        DS::ios{
+            productStore.removeEventListener(ProductEvent.PRODUCT_DETAILS_SUCCESS, productInfoSuccess);
+            productStore.removeEventListener(ProductEvent.PRODUCT_DETAILS_FAIL, productInfoFailed);
+        }
+    }
+
+    public static function get instance():IOSStore {
+        if (_instance == null) {
+            _instance = new IOSStore();
+        }
+        return _instance;
+    }
+
+
+    public function get products():Vector.<ProductInfo> {
+        return _products;
+    }
+
+    public function get productsReady():Boolean {
+        return _productsReady;
+    }
+}
+}

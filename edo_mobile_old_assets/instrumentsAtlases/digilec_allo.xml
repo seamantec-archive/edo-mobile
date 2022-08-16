@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="digilec_allo.png">
+  <SubTexture name="instance2" x="0" y="0" width="75" height="400" pivotX="0" pivotY="0" originX="0" originY="0" originWidth="75" originHeight="400" visible="true" color="0"/>
+  <SubTexture name="instance3" x="0" y="400" width="5" height="6" pivotX="0" pivotY="0.925" originX="23.925" originY="213.775" originWidth="4.25" originHeight="5.275" visible="true" color="0"/>
+  <SubTexture name="instance4" x="0" y="406" width="3" height="6" pivotX="0" pivotY="0.825" originX="61.35" originY="214.875" originWidth="2.1" originHeight="5.3" visible="true" color="0"/>
+  <SubTexture name="instance5" x="0" y="412" width="4" height="10" pivotX="-1.25" pivotY="-5.775" originX="23.875" originY="318.275" originWidth="3.05" originHeight="9.95" visible="true" color="0"/>
+  <SubTexture name="instance6" x="3" y="406" width="5" height="6" pivotX="0" pivotY="0.925" originX="23.925" originY="174.025" originWidth="4.25" originHeight="5.275" visible="true" color="0"/>
+  <SubTexture name="instance7" x="5" y="400" width="3" height="6" pivotX="0" pivotY="0.825" originX="61.35" originY="175.125" originWidth="2.1" originHeight="5.3" visible="true" color="0"/>
+  <SubTexture name="instance8" x="0" y="422" width="3" height="8" pivotX="-0.95" pivotY="-4.075" originX="50.625" originY="323.525" originWidth="2.4" originHeight="7.85" visible="true" color="0"/>
+  <TextField name="sog_unit" font="Amble Bold" x="52.425" y="34.05" width="21.575" height="10.85" pivotX="1" pivotY="1" size="9.6348" bold="false" italic="false" color="16777215" defaultText="kts"/>
+  <TextField name="depth_unit" font="Amble Bold" x="60.725" y="374.45" width="13.275" height="10.275" pivotX="1" pivotY="1" size="9.1242" bold="true" italic="false" color="16777215" defaultText="m"/>
+  <TextField name="cog" font="DigitalEDOpr" x="4.5" y="129.05" width="51.2" height="30.95" pivotX="1" pivotY="1" size="27.4836" bold="false" italic="false" color="16777215" defaultText="---"/>
+  <SubTexture name="sog" x="-1" y="-1" width="47" height="24" pivotX="-2.5" pivotY="-7.45" originX="3.825" originY="11.75" originWidth="46.1" originHeight="23.7" visible="true" color="0">
+    <TextField name="_a" font="DigitalEDOpr" x="0" y="0" width="29.45" height="23.55" pivotX="1" pivotY="1" size="20.9124" bold="false" italic="false" color="16777215" defaultText="--"/>
+    <TextField name="_b" font="DigitalEDOpr" x="33.85" y="6.624999999999999" width="12.25" height="17.075" pivotX="1" pivotY="1" size="15.1626" bold="false" italic="false" color="16777215" defaultText="-"/>
+  </SubTexture>
+  <TextField name="utc_a" font="DigitalEDOpr" x="2.45" y="319.625" width="22.025" height="18.175" pivotX="1" pivotY="1" size="16.139400000000002" bold="false" italic="false" color="16777215" defaultText="--"/>
+  <TextField name="utc_b" font="DigitalEDOpr" x="27.975" y="319.625" width="23.025" height="18.175" pivotX="1" pivotY="1" size="16.139400000000002" bold="false" italic="false" color="16777215" defaultText="--"/>
+  <TextField name="lon_deg" font="DigitalEDOpr" x="0.775" y="218.675" width="24.725" height="13.85" pivotX="1" pivotY="1" size="12.2988" bold="false" italic="false" color="16777215" defaultText="---"/>
+  <TextField name="lon_min_a" font="DigitalEDOpr" x="22.5" y="218.675" width="21" height="25.35" pivotX="1" pivotY="1" size="22.510800000000003" bold="false" italic="false" color="16777215" defaultText="--"/>
+  <TextField name="lon_min_b" font="DigitalEDOpr" x="40.5" y="221.55" width="22.25" height="19.2" pivotX="1" pivotY="1" size="17.049599999999998" bold="false" italic="false" color="16777215" defaultText="---"/>
+  <TextField name="NS" font="Amble Bold" x="63.2" y="182.375" width="8.8" height="12.625" pivotX="1" pivotY="1" size="11.211" bold="false" italic="false" color="16777215" defaultText="N&#xD;"/>
+  <TextField name="lat_deg" font="DigitalEDOpr" x="8.45" y="179.35" width="17.05" height="13.85" pivotX="1" pivotY="1" size="12.2988" bold="false" italic="false" color="16777215" defaultText="--"/>
+  <TextField name="lat_min_a" font="DigitalEDOpr" x="26.375" y="179.35" width="17.125" height="13.85" pivotX="1" pivotY="1" size="12.2988" bold="false" italic="false" color="16777215" defaultText="--"/>
+  <TextField name="lat_min_b" font="DigitalEDOpr" x="43.8" y="182.575" width="18.95" height="10.625" pivotX="1" pivotY="1" size="9.435" bold="false" italic="false" color="16777215" defaultText="---"/>
+  <TextField name="utc_c" font="DigitalEDOpr" x="54.575" y="324.725" width="16.175" height="12.775" pivotX="1" pivotY="1" size="11.3442" bold="false" italic="false" color="16777215" defaultText="--"/>
+  <TextField name="EW" font="Amble Bold" x="62.975" y="221.3" width="8.3" height="12.625" pivotX="1" pivotY="1" size="11.211" bold="false" italic="false" color="16777215" defaultText="E&#xD;"/>
+  <SubTexture name="instance9" x="0" y="430" width="8" height="9" pivotX="0" pivotY="1.025" originX="55.175" originY="124.875" originWidth="7.325" originHeight="8.325" visible="true" color="0"/>
+  <TextField name="water_depth_a" font="DigitalEDOpr" x="3.5" y="360.675" width="41" height="23.55" pivotX="1" pivotY="1" size="20.9124" bold="false" italic="false" color="16777215" defaultText="---"/>
+  <TextField name="water_depth_b" font="DigitalEDOpr" x="47.3" y="366.225" width="12.25" height="17.075" pivotX="1" pivotY="1" size="15.1626" bold="false" italic="false" color="16777215" defaultText="-"/>
+  <SubTexture name="instance10" x="0" y="439" width="69" height="347" pivotX="-3.975" pivotY="-6.65" originX="0" originY="0" originWidth="68.775" originHeight="346.6" visible="true" color="0"/>
+  <SubTexture name="cog_analog" x="0" y="786" width="57" height="57" pivotX="28.225" pivotY="28.25" originX="37.5" originY="92.95" originWidth="56.525" originHeight="56.525" visible="true" color="0">
+    <SubTexture name="instance11" x="0" y="843" width="57" height="57" pivotX="28.225" pivotY="28.25" originX="28.225" originY="28.25" originWidth="56.525" originHeight="56.525" visible="true" color="0"/>
+    <SubTexture name="cog_mutato" x="8" y="400" width="4" height="21" pivotX="1.55" pivotY="18.9" originX="28.25" originY="28.275" originWidth="3.1" originHeight="20.375" visible="false" color="0">
+      <SubTexture name="instance12" x="12" y="400" width="4" height="21" pivotX="1.55" pivotY="18.9" originX="1.55" originY="18.9" originWidth="3.1" originHeight="20.375" visible="true" color="0"/>
+    </SubTexture>
+  </SubTexture>
+  <SubTexture name="utc_analog" x="0" y="900" width="55" height="55" pivotX="27.425" pivotY="27.35" originX="37.5" originY="283.4" originWidth="54.7" originHeight="54.7" visible="true" color="0">
+    <SubTexture name="instance13" x="0" y="955" width="55" height="55" pivotX="27.425" pivotY="27.35" originX="27.425" originY="27.35" originWidth="54.7" originHeight="54.7" visible="true" color="0"/>
+    <SubTexture name="ora_mutato" x="16" y="400" width="2" height="19" pivotX="1" pivotY="12.65" originX="27.425" originY="27.35" originWidth="2" originHeight="18.4" visible="false" color="0">
+      <SubTexture name="instance14" x="16" y="419" width="2" height="19" pivotX="1" pivotY="12.65" originX="1" originY="12.65" originWidth="2" originHeight="18.4" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="perc_mutato" x="18" y="400" width="1" height="28" pivotX="0.5" pivotY="21.7" originX="27.425" originY="27.35" originWidth="1" originHeight="27.5" visible="false" color="0">
+      <SubTexture name="instance15" x="19" y="400" width="1" height="28" pivotX="0.5" pivotY="21.7" originX="0.5" originY="21.7" originWidth="1" originHeight="27.5" visible="true" color="0"/>
+    </SubTexture>
+    <SubTexture name="instance16" x="3" y="422" width="5" height="5" pivotX="2.25" pivotY="2.25" originX="27.425" originY="27.35" originWidth="4.5" originHeight="4.5" visible="true" color="0"/>
+  </SubTexture>
+</TextureAtlas>

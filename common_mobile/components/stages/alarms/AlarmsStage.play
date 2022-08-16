@@ -1,0 +1,123 @@
+/**
+ * Created by seamantec on 13/10/14.
+ */
+package components.stages.alarms {
+
+import com.alarm.Alarm;
+import com.alarm.AlarmHandler;
+import com.common.AppProperties;
+import com.inAppPurchase.CommonStore;
+import com.ui.Badge;
+import com.ui.StageBtn;
+
+import components.EdoStage;
+import components.StageContainer;
+import components.TopBar;
+import components.lists.List;
+
+import flash.events.Event;
+
+import starling.events.Touch;
+
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+
+public class AlarmsStage extends EdoStage {
+
+    public static const ID:String = "alarms_stage";
+
+    private var _allBtn:StageBtn;
+    private var _activeBtn:StageBtn;
+    private var _activeBadge:Badge;
+
+    public function AlarmsStage() {
+        super(ID, "Alarms");
+
+        _list = new List(0,TopBar.HEIGHT, AppProperties.screenWidth,AppProperties.screenHeight - TopBar.HEIGHT - EdoStage.BOTTOM_HEIGHT, 0x656565,1);
+        addChild(_list);
+
+        createButtons();
+        fillList();
+
+        updateActiveAlarms();
+
+        if(!CommonStore.instance.isAlarmEnabled) {
+            addPurchaseButton(EdoStage.PURCHASE_TYPE_ALARMS);
+        }
+
+        AlarmHandler.instance.addEventListener("activeAlarmCounterChanged", activeAlarmCounterChangedHandler, false, 0, true);
+    }
+
+    private function fillList():void {
+        var length:int = AlarmHandler.instance.alarmsSize;
+        var alarm:Alarm;
+        for (var i:int = 0; i < length; i++) {
+            alarm = AlarmHandler.instance.alarms[AlarmHandler.instance.orderedAlarms[i]] as Alarm;
+            _list.addItem(new AlarmsListItem(alarm.toString()));
+        }
+    }
+
+    private function createButtons():void {
+        _allBtn = new StageBtn("All");
+        _allBtn.selected = true;
+        _allBtn.addEventListener(TouchEvent.TOUCH, allBtnHandler);
+        addButton(_allBtn);
+        _activeBtn = new StageBtn("Active");
+        _activeBtn.addEventListener(TouchEvent.TOUCH, activeBtnHandler);
+        addButton(_activeBtn);
+        _activeBadge = new Badge(_activeBtn.x + _activeBtn.width - 20, _activeBtn.y - 3);
+        _activeBadge.text = "0";
+        _bottom.addChild(_activeBadge);
+    }
+
+    private function allBtnHandler(e:TouchEvent):void {
+        var touch:Touch = e.getTouch(this.stage);
+        if (touch) {
+            if (touch.phase == TouchPhase.ENDED) {
+                _allBtn.selected = true;
+                _activeBtn.selected = false;
+
+                _list.filters = null;
+                _list.scrollToStart();
+            }
+        }
+    }
+
+    private function activeBtnHandler(e:TouchEvent):void {
+        var touch:Touch = e.getTouch(this.stage);
+        if (touch) {
+            if (touch.phase == TouchPhase.ENDED) {
+                _allBtn.selected = false;
+                _activeBtn.selected = true;
+
+                var filters:Vector.<Function> = new Vector.<Function>();
+                filters.push(activeFilter);
+                _list.filters = filters;
+                _list.scrollToStart();
+            }
+        }
+    }
+
+    private function activeFilter(item:AlarmsListItem):Boolean {
+        return item.enabled();
+    }
+
+    private function activeAlarmCounterChangedHandler(e:Event):void {
+        updateActiveAlarms();
+    }
+
+    private function updateActiveAlarms():void {
+        _activeBadge.text = AlarmHandler.instance.activeAlarmCounter.toString();
+        if (_list.filters!=null) {
+            var filters:Vector.<Function> = new Vector.<Function>();
+            filters.push(activeFilter);
+            _list.filters = filters;
+            _list.scrollBox(0);
+        }
+    }
+
+    public function set scrollable(value:Boolean):void {
+        _list.scrollable = value;
+    }
+}
+}

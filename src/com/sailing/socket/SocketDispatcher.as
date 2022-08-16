@@ -1,0 +1,351 @@
+package com.sailing.socket {
+//import com.sailing.WindowsHandler;
+import com.events.SocketEvent;
+import com.loggers.NmeaLogger;
+import com.notification.NotificationHandler;
+import com.notification.NotificationTypes;
+import com.sailing.ParserNotifier;
+import com.sailing.combinedDataHandlers.CombinedDataHandler;
+import com.sailing.nmeaParser.utils.NmeaInterpreter;
+import com.sailing.nmeaParser.utils.NmeaPacketer;
+import com.sailing.units.Direction;
+import com.store.SettingsConfigs;
+import com.store.Statuses;
+import com.utils.SaveHandler;
+import com.utils.SoundHandler;
+
+import components.ConnectionSettings;
+
+import flash.events.DatagramSocketDataEvent;
+import flash.events.Event;
+import flash.events.IOErrorEvent;
+import flash.events.ProgressEvent;
+import flash.events.SecurityErrorEvent;
+import flash.events.TimerEvent;
+import flash.net.DatagramSocket;
+import flash.net.Socket;
+import flash.system.System;
+import flash.utils.ByteArray;
+import flash.utils.Timer;
+
+import starling.events.EventDispatcher;
+
+public class SocketDispatcher extends EventDispatcher {
+    public static const TCP:uint = 0;
+    public static const UDP:uint = 1;
+    private static var _instance:SocketDispatcher;
+
+    private var _connectionType:uint = TCP;
+
+    private var _socket:Socket;
+    private var _udpSocket:DatagramSocket;
+    private var packeter:NmeaPacketer = new NmeaPacketer();
+
+    //external parser or internal parser
+    private var withParser:Boolean;
+
+    private var _updateTimer:Timer;
+    // periodic update interval in milliseconds
+    private static var _updateInterval:Number = 100;
+    private var _demoConnect:DemoConnection;
+    private var _isDemoConnected:Boolean = false;
+
+    public function SocketDispatcher() {
+        if (_instance == null) {
+            this.withParser = false;
+            _socket = new Socket();
+            _socket.addEventListener(ProgressEvent.SOCKET_DATA, onSocketData, false, 0, true);
+            _socket.addEventListener(Event.CONNECT, onSocketConnected, false, 0, true);
+            _socket.addEventListener(Event.CLOSE, onSocketClosed, false, 0, true);
+            _socket.addEventListener(IOErrorEvent.NETWORK_ERROR, networkIOError, false, 0, true);
+            _socket.addEventListener(IOErrorEvent.IO_ERROR, onSocketError, false, 0, true);
+            _socket.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onSocketSecurityError, false, 0, true);
+            initUdpSocket();
+            //Start timer to fetch data from socket
+            _updateTimer = new Timer(_updateInterval, 0);
+            _updateTimer.addEventListener("timer", onUpdateTimer, false, 0, true);
+            Statuses.instance.socketStatus = false;
+            _demoConnect = new DemoConnection(this);
+            _connectionType = SettingsConfigs.instance.connectionType;
+        }
+
+    }
+
+    private function initUdpSocket():void {
+        _udpSocket = new DatagramSocket();
+        _udpSocket.addEventListener(DatagramSocketDataEvent.DATA, udpSocket_dataHandler, false, 0, true);
+        _udpSocket.addEventListener(IOErrorEvent.IO_ERROR, udpIoErrorHandler, false, 0, true);
+        _udpSocket.addEventListener(Event.CLOSE, udpCloseHandler, false, 0, true);
+    }
+
+    public function connectDemo():void {
+        close();
+        Statuses.instance.socketStatus = true;
+        initComponentsForConnect();
+        setInitValidation();
+        ParserNotifier.instance.reset();
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.activate();
+//        }
+        _demoConnect.start();
+        _isDemoConnected = true;
+//        dispatchEvent(new Event("connectDisconnectDemo"));
+    }
+
+    public function stopDemoConnect():void {
+        Statuses.instance.socketStatus = false;
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.deactivate();
+//        }
+        _demoConnect.stop();
+        _isDemoConnected = false;
+
+        resetEverythingAfterClose();
+//        dispatchEvent(new Event("connectDisconnectDemo"))
+    }
+
+    public function connect():void {
+        setUpConnectAndConnect();
+    }
+
+    private function setUpConnectAndConnect():void {
+        stopDemoConnect();
+        initComponentsForConnect();
+        if (_connectionType == TCP) {
+            try {
+                if (!_socket.connected) {
+                    _socket.connect(SettingsConfigs.instance.host, SettingsConfigs.instance.port);
+                }
+            } catch (e:Error) {
+//            SystemLogger.Warn(e.message);
+            }
+        } else {
+            trace("udpsocket", SettingsConfigs.instance.port, SettingsConfigs.instance.host)
+            if (_udpSocket.bound) {
+                _udpSocket.close()
+                initUdpSocket();
+            }
+            _udpSocket.bind(SettingsConfigs.instance.ownUDPPort)
+            _udpSocket.receive();
+            var data:ByteArray = new ByteArray();
+
+            data.writeUTFBytes("u");
+            _udpSocket.send(data, 0, 0, SettingsConfigs.instance.host, SettingsConfigs.instance.port);
+        }
+        ParserNotifier.instance.start();
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.activate();
+//        }
+        setInitValidation();
+    }
+
+    private function setInitValidation():void {
+//        for (var key:String in WindowsHandler.instance.listeners) {
+//            WindowsHandler.instance.setValid(key);
+//        }
+    }
+
+    public function initComponentsForConnect():void {
+        Direction.isVariationValid = false;
+        Direction.variation = 0;
+//        WindowsHandler.instance.dataSource = "socket";
+        NmeaPacketer.reset();
+        CombinedDataHandler.instance.resetHandlerDatas();
+//        MinMaxHandler.instance.datasourceChanged();
+    }
+
+    public function close(withMessage:Boolean = true):void {
+        if (connected()) {
+            if (withMessage) {
+                NotificationHandler.createAlert(NotificationTypes.USER_CONNECTION_CLOSE_ALERT, NotificationTypes.USER_CONNECTION_CLOSE_ALERT_TEXT, 1, closeSocket);
+            } else {
+                closeSocket()
+            }
+        }
+    }
+
+    private function closeSocket():void {
+        if (_connectionType == TCP) {
+            _socket.close();
+        } else {
+            _udpSocket.close();
+            initUdpSocket();
+        }
+        Statuses.instance.socketStatus = connected();
+        SaveHandler.instance.save();
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.deactivate();
+//        }
+        resetEverythingAfterClose();
+        dispatchEvent(new SocketEvent(SocketEvent.DISCONNECTED));
+        ConnectionSettings.enableSimulation = true;
+    }
+
+
+    private function resetEverythingAfterClose():void {
+//        WindowsHandler.instance.resetInstruments();
+//        AisContainer.instance.reset();
+        ParserNotifier.instance.stop();
+        CombinedDataHandler.instance.resetHandlerDatas();
+        System.pauseForGCIfCollectionImminent(0.15);
+    }
+
+    public function connectDisconnect():void {
+//        AisContainer.instance.deleteAllShip();
+        if (Statuses.instance.socketStatus && !isDemoConnected) {
+            close();
+        } else {
+            connect();
+        }
+
+    }
+
+    public function getStatus():int {
+        if (connected()) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    private function onSocketConnected(e:Event):void {
+        _updateTimer.start();
+        setConnected();
+    }
+
+    private function setConnected():void {
+        if (!Statuses.instance.socketStatus) {
+            Statuses.instance.socketStatus = connected();
+            dispatchEvent(new SocketEvent(SocketEvent.CONNECTED));
+            ConnectionSettings.enableSimulation = false;
+            SoundHandler.playSound();
+            SaveHandler.instance.start();
+        }
+    }
+
+    private function onSocketClosed(e:Event):void {
+        SaveHandler.instance.save();
+        Statuses.instance.socketStatus = connected();
+        _updateTimer.stop();
+        dispatchEvent(new SocketEvent(SocketEvent.DISCONNECTED));
+        ConnectionSettings.enableSimulation = true;
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.deactivate();
+//        }
+    }
+
+    private function onSocketData(e:ProgressEvent):void {
+        handleSocketData(e.currentTarget.readUTFBytes(e.currentTarget.bytesAvailable));
+    }
+
+    private function udpSocket_dataHandler(event:DatagramSocketDataEvent):void {
+        setConnected();
+        handleSocketData(event.data.readUTFBytes(event.data.bytesAvailable));
+    }
+
+
+    internal function handleSocketData(str:String):void {
+        if (!_isDemoConnected) {
+            NmeaLogger.instance.writeLog(str);
+        }
+
+        var packet_data:Array = packeter.newReadPacket(str);
+        for each(var a:String in packet_data) {
+            var x:Object = NmeaInterpreter.processWithMessageCode(a);
+            if (x != null && x.data != null) {
+                ParserNotifier.instance.updateSailDatas(x);
+            }
+        }
+    }
+
+    private function onSocketError(e:IOErrorEvent):void {
+        if (_socket.connected) {
+            NotificationHandler.createWarning(NotificationTypes.SYSTEM_CONNECTION_CLOSE_WARNING, NotificationTypes.SYSTEM_CONNECTION_CLOSE_WARNING_TEXT);
+        }
+        if (_isDemoConnected) {
+            Statuses.instance.socketStatus = _isDemoConnected
+        } else {
+            Statuses.instance.socketStatus = connected()
+        }
+        trace(e);
+        dispatchEvent(new SocketEvent(SocketEvent.DISCONNECTED));
+//        dispatchEvent(new Event("connectDisconnect"))
+        ConnectionSettings.enableSimulation = true;
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.deactivate();
+//        }
+    }
+
+    private function onSocketSecurityError(e:SecurityErrorEvent):void {
+        Statuses.instance.socketStatus = connected();
+        dispatchEvent(new SocketEvent(SocketEvent.DISCONNECTED));
+        ConnectionSettings.enableSimulation = true;
+//        if (!CommonStore.instance.isInstrumentsEnabled) {
+//            ParserNotifier.instance.deactivate();
+//        }
+    }
+
+
+    public function onUpdateTimer(e:TimerEvent):void {
+        var message:String;
+        message = getMessageWithoutParser();
+        sendText(message);
+    }
+
+    private function sendText(str:String):void {
+        if (_socket.connected) {
+            _socket.writeUTFBytes(str);
+            _socket.flush();
+        } else {
+            //Alert.show("No socket connetcion");
+            _updateTimer.stop();
+        }
+    }
+
+
+    private function getMessageWithoutParser():String {
+        return "u";
+    }
+
+    public function get isDemoConnected():Boolean {
+        return _isDemoConnected;
+    }
+
+
+    public static function get instance():SocketDispatcher {
+        if (_instance == null) {
+            _instance = new SocketDispatcher();
+        }
+        return _instance;
+    }
+
+    private function networkIOError(event:IOErrorEvent):void {
+        trace("network error");
+    }
+
+
+    public function get connectionType():uint {
+        return _connectionType;
+    }
+
+    public function set connectionType(value:uint):void {
+        close(false);
+        _connectionType = value;
+        SettingsConfigs.instance.connectionType = _connectionType;
+
+    }
+
+
+    private function udpIoErrorHandler(event:IOErrorEvent):void {
+        trace("UDP IO ERROR")
+    }
+
+    private function udpCloseHandler(event:Event):void {
+        trace("UDP CLOSED");
+    }
+
+    private function connected():Boolean {
+        return (_connectionType == TCP && _socket.connected) || (_connectionType == UDP && _udpSocket.bound)
+    }
+}
+}

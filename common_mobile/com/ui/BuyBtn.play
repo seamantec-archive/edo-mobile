@@ -1,0 +1,41 @@
+/**
+ * Created by seamantec on 12/03/15.
+ */
+package com.ui {
+import com.utils.Assets;
+
+import flash.geom.Point;
+
+import starling.display.Button;
+import starling.events.Touch;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
+import starling.textures.Texture;
+
+public class BuyBtn extends Button {
+
+    private var _touchPoint:Point;
+
+    public function BuyBtn() {
+        var upState:Texture = Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("buynow_normal");
+        var downState:Texture = Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("buynow_pressed");
+        var disabledState:Texture = Assets.uiAssets.getTextureAtlas("ui_elements").getTexture("buynow_disabled");
+
+        super(upState, "", downState, upState, disabledState);
+    }
+
+    public function touchIsEnd(e:TouchEvent):Touch {
+        var began:Touch = e.getTouch(this, TouchPhase.BEGAN);
+        var ended:Touch = e.getTouch(this, TouchPhase.ENDED);
+        if (e.touches.length > 1) {
+            return null;
+        }
+        if (began) {
+            _touchPoint = new Point(began.globalX, began.globalY);
+        } else if (ended && Math.abs(_touchPoint.x - ended.globalX) < EdoMobile.FINGER_SIZE && Math.abs(_touchPoint.y - ended.globalY) < EdoMobile.FINGER_SIZE) {
+            return ended;
+        }
+        return null;
+    }
+}
+}
